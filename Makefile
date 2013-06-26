@@ -3,7 +3,8 @@
 # - SHIT OPERA Y SAFARI ES ESPECIAL
 
 # Module definitions
-MODULE_FILES = mvusertools.user.js hotkeys.js macros.js
+# macros.js favs.js
+MODULE_FILES = mvusertools.user.js css.js options.js hotkeys.js footer.js mods.js marcapaginas.js favicon.js bigscreen.js
 MODULE_DIR = ./modules/
 MODULES = $(addprefix $(MODULE_DIR), $(MODULE_FILES))
 

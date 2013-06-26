@@ -15,58 +15,57 @@
 
     // Go previus page
     if (typeof previousPageLink != 'undefined') {
-	Mousetrap.bind('ctrl+alt+z', function() {
-	    document.location = BASE_URL + '/' + previousPageLink;
-	});
+        Mousetrap.bind('ctrl+alt+z', function () {
+            document.location = BASE_URL + '/' + previousPageLink;
+        });
     }
 
     // Go next page
     if (typeof nextPageLink != 'undefined') {
-	Mousetrap.bind('ctrl+alt+x', function() {
-	    document.location = BASE_URL + '/' + nextPageLink;
-	});
+        Mousetrap.bind('ctrl+alt+x', function () {
+            document.location = BASE_URL + '/' + nextPageLink;
+        });
     }
 
     // Open/close Spoilers
-    Mousetrap.bind('ctrl+alt+s', function (){
-	if (jQuery('div[id^="cuerpo_"] div[id^="sp_"]').is(':visible')) {
-	    jQuery('div[id^="cuerpo_"] a.spoiler.less').removeClass('less');
-	    jQuery('div[id^="cuerpo_"] div[id^="sp_"]').hide();
-	}
-	else {
-	    jQuery('div[id^="cuerpo_"] a.spoiler').toggleClass('less');
-	    jQuery('div[id^="cuerpo_"] div[id^="sp_"]').toggle();
-	}
+    Mousetrap.bind('ctrl+alt+s', function () {
+        if (jQuery('div[id^="cuerpo_"] div[id^="sp_"]').is(':visible')) {
+            jQuery('div[id^="cuerpo_"] a.spoiler.less').removeClass('less');
+            jQuery('div[id^="cuerpo_"] div[id^="sp_"]').hide();
+        } else {
+            jQuery('div[id^="cuerpo_"] a.spoiler').toggleClass('less');
+            jQuery('div[id^="cuerpo_"] div[id^="sp_"]').toggle();
+        }
     });
 
     // Go favorites
-    Mousetrap.bind('ctrl+alt+e', function() {
-	document.location = BASE_URL + FAVS_URL;
+    Mousetrap.bind('ctrl+alt+e', function () {
+        document.location = BASE_URL + FAVS_URL;
     });
 
     // Go to your profile
-    Mousetrap.bind('ctrl+alt+q', function() {
-	document.location = BASE_URL + PROFILE_URL + UserTools.user;
+    Mousetrap.bind('ctrl+alt+q', function () {
+        document.location = BASE_URL + PROFILE_URL + UserTools.user;
     });
 
     // Go to warnings
-    Mousetrap.bind('ctrl+alt+w', function() {
-	document.location = BASE_URL + NOTIF_URL;
+    Mousetrap.bind('ctrl+alt+w', function () {
+        document.location = BASE_URL + NOTIF_URL;
     });
 
     // Go to private messages
-    Mousetrap.bind('ctrl+alt+r', function() {
-	document.location = BASE_URL + PM_URL;
+    Mousetrap.bind('ctrl+alt+r', function () {
+        document.location = BASE_URL + PM_URL;
     });
 
     // Go to forums
-    Mousetrap.bind('ctrl+alt+a', function() {
-	document.location = BASE_URL + FORUM_URL;
+    Mousetrap.bind('ctrl+alt+a', function () {
+        document.location = BASE_URL + FORUM_URL;
     });
 
     // Go to spy
-    Mousetrap.bind('ctrl+alt+d', function() {
-	document.location = BASE_URL + SPY_URL;
+    Mousetrap.bind('ctrl+alt+d', function () {
+        document.location = BASE_URL + SPY_URL;
     });
 
 })(window.document, Mousetrap, window.UserTools);
