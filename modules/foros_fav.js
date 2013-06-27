@@ -1,22 +1,24 @@
-(function (document, $, UserTools) {
+(function (window, document, $, UserTools) {
+
+    UserTools.options.setDefault('forosfavs', true);
 
     if (UserTools.options.get('forosfavs')) {
 
 	$(function () {
 
-	    var forosFav = UserTools.options.get('-forosFav', []);
+	    var forosFav;
 
-            /*Container*/
+            // Container
             //$('<div id="foros-fav-float">').append('<div><ul id="ut-foros-fav">').insertBefore('#content_body, #content_head');
             $('<div id="sticky-anchor" style="position: absolute; top: 200px;">').insertBefore('#content_body, #content_head');
             $('<div id="foros-fav-float">').append('<div><ul id="ut-foros-fav">').insertAfter('#sticky-anchor');
 
-            /*Dibujamos los foros favoritos en la lista*/
+            // Dibujamos los foros favoritos en la lista*/
             var forosFavUpdate = function () {
 		forosFav = UserTools.options.get('-forosFav', []);
 		var forosFavDibujo = function () {
+		    var i;
                     for (i = 0; i < forosFav.length; i++) {
-			var foroNombre = $('div.fpanel div.info a.hb[href="/foro/' + forosFav[i] + '"]').html();
 			$('#ut-foros-fav').append(
                             $('<li>').html('<a href="/foro/' + forosFav[i] + '"><i class="ifid fid_' + forosFav[i] + '"></i></a><div class="ut-foros-fav-borrar"><i class="sprite UT-trash"></i></div>')
 			);
@@ -28,7 +30,7 @@
 
             forosFavUpdate();
 
-            /*Boton para añadir a favoritos*/
+            // Boton para añadir a favoritos
             $('div.fpanel div.icon').append('<div class="ut-foro-fav-add">');
             $("div.fpanel div.icon").hover(
 		function () {
@@ -58,7 +60,7 @@
 		$(this).toggleClass('ut-foro-fav-added');
             });
 
-            /*Botón para borrar*/
+            // Botón para borrar
             $(document).on('click', '.ut-foros-fav-borrar', function () {
 		$(this).siblings('a[href^="/foro"]').each(function () {
                     var enlace = this + "";
@@ -73,7 +75,7 @@
 		});
             });
 
-            /*Pone la estrella correcta*/
+            // Pone la estrella correcta
             $('div.fpanel div.icon').each(function () {
 		$(this).siblings('div.info').find('a.hb,strong a').each(function () {
                     var enlace = this + "";
@@ -87,8 +89,8 @@
 		});
             });
 
-            /*Panel flotante sigue el scroll*/
-            function sticky_relocate() {
+            // Panel flotante sigue el scroll
+            var sticky_relocate = function() {
 		var window_top = $(window).scrollTop();
 		var div_top = $('#sticky-anchor').offset().top;
 		if (window_top > div_top)
@@ -109,4 +111,4 @@
 
     }
 
-})(window.document, jQuery, window.UserTools);
+})(window, window.document, jQuery, window.UserTools);

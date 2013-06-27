@@ -1,5 +1,8 @@
 (function($, UserTools) {
 
+    UserTools.options.setDefault('linksfooter', true);
+    UserTools.options.setDefault('linksfooteroscuro', false);
+
     // Links importantes en el footer
     $(function () {
 	if (UserTools.options.get('linksfooter')) {

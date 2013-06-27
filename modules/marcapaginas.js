@@ -1,4 +1,6 @@
-(function ($) {
+(function ($, UserTools) {
+
+    UserTools.options.setDefault('marcapaginas', true);
 
     if (UserTools.options.get('marcapaginas')) {
 	$(function () {
@@ -9,4 +11,4 @@
 	});
     }
 
-})(jQuery, UserTools);
+})(jQuery, window.UserTools);

@@ -1,9 +1,15 @@
 (function ($, UserTools, Tinycon) {
 
+    UserTools.options.setDefault('favicon', true);
+
     // Avisos en el favicon
     if (UserTools.options.get('favicon')) {
 
 	$(function () {
+
+	    var utnoti = $('#userinfo a[href^="/foro/favoritos"] strong.bubble').html();
+	    var utavisos = $('#userinfo a[href^="/notificaciones"] strong.bubble').html();
+	    var utmsj = $('#userinfo a[href^="/mensajes"] strong.bubble').html();
 
             if (utnoti === undefined) {
 		var utnoti_int = parseInt(0, 10);

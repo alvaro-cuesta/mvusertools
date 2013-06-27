@@ -2,9 +2,13 @@
 # - Bundling
 # - SHIT OPERA Y SAFARI ES ESPECIAL
 
+# Por probar
+# bigscreen.js
+# MAL: BLACKLIST
+
+
 # Module definitions
-# macros.js favs.js
-MODULE_FILES = mvusertools.user.js css.js options.js hotkeys.js footer.js mods.js marcapaginas.js favicon.js bigscreen.js
+MODULE_FILES = main.js css.js hotkeys.js footer.js mods.js marcapaginas.js favicon.js botoneras.js userinfo.js nombres.js favoritos.js spy.js spoiler.js foros_fav.js antiguo.js foros.js tags.js blacklist.js usertools.js macros.js
 MODULE_DIR = ./modules/
 MODULES = $(addprefix $(MODULE_DIR), $(MODULE_FILES))
 

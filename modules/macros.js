@@ -22,7 +22,7 @@
         for (title in store) {
             if (!(title in macros)) {
                 var $spantitle = $('<span class="ut-titletxt">').text(title);
-                var $spanmacro = $('<div class="ut-macrotxt"' + (is_dark ? " style='color: #EEEEEE !important;'" : "") + '>').text(store[title]);
+                var $spanmacro = $('<div class="ut-macrotxt"' + (UserTools.isDark ? " style='color: #EEEEEE !important;'" : "") + '>').text(store[title]);
                 var $title = $('<a>').html(' <a style="cursor:pointer;" title="Borrar macro" class="ut-remove-macro"><i class="sprite UT-trash-orange"></i></a>').prepend($spantitle).append($spanmacro); // solo +title+ para la lista de titulos
                 var $item = $('<li class="ut-titleymacro">')
                     .data('macro', title)
@@ -105,7 +105,7 @@
             return false;
         });
 
-        if ($('#goext').length > 0 || liveactivado == true) {
+        if ($('#goext').length > 0 || UserTools.live === true) {
             $('#ut-button-macros-list').addClass('ut-button-macros-list-barrendera');
         }
     });

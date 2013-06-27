@@ -1,5 +1,6 @@
-
 (function ($, UserTools) {
+
+    UserTools.options.setDefault('bigscreen', true);
 
     // Modo bigscreen en live con stream
     if (UserTools.options.get('bigscreen')) {
