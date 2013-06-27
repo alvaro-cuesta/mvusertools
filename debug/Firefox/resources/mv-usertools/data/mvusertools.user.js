@@ -39,11 +39,8 @@ window.UserTools = {
             var valor = localStorage.getItem(opcion);
             if (valor !== null && typeof valor !== "undefined" && valor !== "undefined") {
                 return JSON.decode(valor);
-            } else if (defecto !== null && typeof defecto !== "undefined") {
-                defecto = JSON.encode(defecto);
-                localStorage.setItem(opcion, defecto);
-                return defecto;
             }
+            return defecto;
         },
         set: function(opcion, valor) {
             opcion = "ut" + opcion;
@@ -53,6 +50,23 @@ window.UserTools = {
             opcion = "ut" + opcion;
             if (localStorage.getItem(opcion) === null) {
                 localStorage.setItem(opcion, JSON.encode(defecto));
+            }
+        },
+        toggle: function(opcion) {
+            window.UserTools.set(opcion, !window.UserTools.get(opcion));
+        },
+        $: function(option, callback) {
+            if (UserTools.options.get(option)) {
+                $(function() {
+                    callback();
+                });
+            }
+        },
+        not$: function(option, callback) {
+            if (!UserTools.options.get(option)) {
+                $(function() {
+                    callback();
+                });
             }
         }
     }
@@ -99,508 +113,535 @@ window.UserTools.options.setDefault("salvarposts", false);
     }
 })();
 
-(function(document, Mousetrap, UserTools) {
+/*
+ * Atajos de teclado.
+ */
+(function($, document, Mousetrap, UserTools) {
     // Constants
     var BASE_URL = "http://www.mediavida.com";
-    var FAVS_URL = "/foro/favoritos";
-    var PROFILE_URL = "/id/";
-    var NOTIF_URL = "/notificaciones";
-    var PM_URL = "/mensajes";
-    var FORUM_URL = "/foro";
-    var SPY_URL = "/foro/spy";
-    // Vars
+    var REDIRECCIONES = {
+        "ctrl+alt+e": "/foro/favoritos",
+        "ctrl+alt+q": "/id/" + UserTools.user,
+        "ctrl+alt+w": "/notificaciones",
+        "ctrl+alt+r": "/mensajes",
+        "ctrl+alt+a": "/foro",
+        "ctrl+alt+d": "/foro/spy"
+    };
+    // Redirecciones genéricas
+    for (hotkey in REDIRECCIONES) {
+        if (REDIRECCIONES.hasOwnProperty(hotkey)) {
+            Mousetrap.bind(hotkey, function() {
+                document.location = BASE_URL + REDIRECCIONES[hotkey];
+            });
+        }
+    }
+    // Previous/next page
     var previousPageLink = jQuery($(".tnext")).attr("href");
     var nextPageLink = jQuery($(".tprev")).attr("href");
-    // Go previus page
-    if (typeof previousPageLink != "undefined") {
+    if (typeof previousPageLink !== "undefined") {
         Mousetrap.bind("ctrl+alt+z", function() {
             document.location = BASE_URL + "/" + previousPageLink;
         });
     }
-    // Go next page
-    if (typeof nextPageLink != "undefined") {
+    if (typeof nextPageLink !== "undefined") {
         Mousetrap.bind("ctrl+alt+x", function() {
             document.location = BASE_URL + "/" + nextPageLink;
         });
     }
     // Open/close Spoilers
     Mousetrap.bind("ctrl+alt+s", function() {
-        if (jQuery('div[id^="cuerpo_"] div[id^="sp_"]').is(":visible")) {
-            jQuery('div[id^="cuerpo_"] a.spoiler.less').removeClass("less");
-            jQuery('div[id^="cuerpo_"] div[id^="sp_"]').hide();
+        var $spoilers = $('div[id^="cuerpo_"] div[id^="sp_"]');
+        if ($spoilers.is(":visible")) {
+            // At least one is visible
+            $('div[id^="cuerpo_"] a.spoiler.less').removeClass("less");
+            $spoilers.hide();
         } else {
-            jQuery('div[id^="cuerpo_"] a.spoiler').toggleClass("less");
-            jQuery('div[id^="cuerpo_"] div[id^="sp_"]').toggle();
+            $('div[id^="cuerpo_"] a.spoiler').addClass("less");
+            $spoilers.show();
         }
     });
-    // Go favorites
-    Mousetrap.bind("ctrl+alt+e", function() {
-        document.location = BASE_URL + FAVS_URL;
-    });
-    // Go to your profile
-    Mousetrap.bind("ctrl+alt+q", function() {
-        document.location = BASE_URL + PROFILE_URL + UserTools.user;
-    });
-    // Go to warnings
-    Mousetrap.bind("ctrl+alt+w", function() {
-        document.location = BASE_URL + NOTIF_URL;
-    });
-    // Go to private messages
-    Mousetrap.bind("ctrl+alt+r", function() {
-        document.location = BASE_URL + PM_URL;
-    });
-    // Go to forums
-    Mousetrap.bind("ctrl+alt+a", function() {
-        document.location = BASE_URL + FORUM_URL;
-    });
-    // Go to spy
-    Mousetrap.bind("ctrl+alt+d", function() {
-        document.location = BASE_URL + SPY_URL;
-    });
-})(window.document, Mousetrap, window.UserTools);
+})(jQuery, window.document, Mousetrap, window.UserTools);
 
+/*
+ * Links importantes en el footer.
+ */
 (function($, UserTools) {
     UserTools.options.setDefault("linksfooter", true);
     UserTools.options.setDefault("linksfooteroscuro", false);
-    // Links importantes en el footer
-    $(function() {
-        if (UserTools.options.get("linksfooter")) {
-            if ($('a.boton[href^="/foro/post.php?f"]').length > 0) {
-                // Vista de foro
-                $("#nav_bar #userinfo").clone().removeAttr("id").addClass("ut-linksfooter").insertAfter("div.tfooter").prepend('<li><a href="/foro/">Foros</a></li><li><a href="/foro/spy">Spy</a></li><li> |</li>');
-                $("#modpanel").css("margin-top", "55px");
-                $(".ut-linksfooter a").removeAttr("id");
-            } else if ($('.live_link a[href^="/foro/live.php?tid="]').length > 0) {
-                // Live
-                $("#nav_bar #userinfo").clone().removeAttr("id").addClass("ut-linksfooter").insertAfter('form#postform[action="/foro/post_action.php"]').prepend('<li><a href="/foro/spy">Spy</a></li><li> |</li>');
-                $(".tpanel.live_link:eq(1)").css("margin-top", "55px");
-                $(".ut-linksfooter a").removeAttr("id");
+    UserTools.options.$("linksfooter", function() {
+        var $linkFooter = $("#nav_bar #userinfo").clone().removeAttr("id").addClass("ut-linksfooter");
+        // Vista de foro
+        if ($('a.boton[href^="/foro/post.php?f"]').length > 0) {
+            $linkFooter.insertAfter("div.tfooter").prepend('<li><a href="/foro/">Foros</a></li><li><a href="/foro/spy">Spy</a></li><li> |</li>');
+            $("#modpanel").css("margin-top", "55px");
+        } else if ($('.live_link a[href^="/foro/live.php?tid="]').length > 0) {
+            $linkFooter.insertAfter('form#postform[action="/foro/post_action.php"]').prepend('<li><a href="/foro/spy">Spy</a></li><li> |</li>');
+            $(".tpanel.live_link:eq(1)").css("margin-top", "55px");
+        } else {
+            $linkFooter.insertAfter('form#postform[action="/foro/post_action.php"]').prepend('<li><a href="/foro/spy">Spy</a></li><li> |</li>');
+            $(".tpanel #mmform").closest("div").css("margin-top", "55px");
+        }
+        $(".ut-linksfooter a").removeAttr("id");
+        var show_dark = UserTools.isDark || UserTools.options.get("linksfooteroscuro");
+        $(".ut-linksfooter").addClass(show_dark ? "ut-linksfooter-negro" : "ut-linksfooter-blanco");
+    });
+})(jQuery, window.UserTools);
+
+/*
+ * Lista de mods en sidebar.
+ */
+(function($, UserTools) {
+    UserTools.options.setDefault("tablamods", true);
+    var mods = {
+        1: [ "bazoo", "jadgix", "J40", "RaymaN", "TazzMaTazz" ],
+        2: [ "Eristoff", "kalinka-" ],
+        3: [ "aLeX", "Josekron", "Loa", "MegalomaniaC", "mongui", "Prava" ],
+        6: [ "Atoll", "Bloody", "Eristoff", "Kails", "JMBaDBoY", "Prava", "PruDeN", "sacnoth" ],
+        7: [ "abichuela", "AG", "alejo", "Ch4iNeR", "cm07", "Korso", "lb_nacho", "Netzach", "VipeR_CS" ],
+        9: [ "Kaos", "PiradoIV", "elkaoD" ],
+        10: [ "TNx7", "tutitin" ],
+        19: [ "Kaneas", "TNx7" ],
+        22: [ "Cryoned", "Dream-MV", "esvarianzza" ],
+        23: [ "darkavm", "ElKedao", "Privatovic", "ukuki" ],
+        26: [ "Midgard", "StumKrav", "thunder_" ],
+        31: [ "Eristoff", "ReYzell" ],
+        32: [ "Andy", "eisenfaust", "ISAILOVIC", "JMBaDBoY", "loko_man", "ruben132", "Sh1n0d4", "t0rrY" ],
+        38: [ "Hir0shz", "Ligia", "ManOwaR", "sPoiLeR" ],
+        40: [ "ferk", "HaZuKi", "horvathzeros", "J40" ],
+        42: [ "dangerous", "zashael" ],
+        52: [ "BigmAK", "MaSqUi", "tutitin", "XaViMeTaL" ],
+        82: [ "Cheester", "cuerpi", "darkavm", "sk_sk4t3r", "TNx7", "Txentx0" ],
+        83: [ "dangerous", "spyro512" ],
+        87: [ "GR33N" ],
+        90: [ "Snorky", "spyro512" ],
+        96: [ "JMBaDBoY", "Sirius_spa", "suggus", "ZaGo" ],
+        97: [ "granaino127", "SaBaNdIjA" ],
+        98: [ "granaino127", "SaBaNdIjA" ],
+        99: [ "darkavm", "GryF", "Kb", "lb_nacho", "-Power" ],
+        102: [ "ElKedao", "darkavm", "dicon", "sk_sk4t3r" ],
+        106: [ "Atoll", "ZaGo" ],
+        107: [ "DeNz1L", "kaitoo", "NosFeR_" ],
+        108: [ "Skelus" ],
+        109: [ "darkavm", "Dolz", "Txentx0", "urrako" ],
+        110: [ "babri", "dicon", "RoDRa", "Spank" ],
+        111: [ "iosp", "Hogwarts", "lb_nacho" ],
+        112: [ "zashael" ],
+        113: [ "Charly-", "edvan", "frostttt", "Kazuya_", "zashael" ],
+        114: [ "0buS", "RaymaN", "sPoiLeR" ],
+        115: [ "CsNarsil", "CybeR" ],
+        116: [ "eisenfaust" ],
+        117: [ "bazoo", "StumKrav", "thunder_" ],
+        118: [ "DarkHawX", "Korso", "Netzach", "StumKrav" ],
+        119: [ "benitogb", "BigmAK" ],
+        121: [ "Andy", "ISAILOVIC", "JMBaDBoY", "loko_man", "ruben132", "Sh1n0d4", "t0rrY" ],
+        122: [ "allmy", "naete", "slakk", "StumKrav", "thunder_" ],
+        123: [ "gonya707", "TRON" ],
+        124: [ "babri", "RoninPiros" ],
+        125: [ "Bidroid", "MagicAnnii" ],
+        126: [ "ChaRliFuM", "menolikeyou", "undimmer" ],
+        127: [ "locof", "Pedrosa7", "Syuk" ],
+        129: [ "alexander", "ferk", "horvathzeros", "J40" ],
+        131: [ "KinachO" ],
+        132: [ "cm07", "RoninPiros" ],
+        134: [ "Rundull" ],
+        135: [ "dangerous" ],
+        136: [ "HeXaN", "Prostyler", "thunder_" ]
+    };
+    // Mods de cada foro
+    UserTools.options.$("tablamods", function() {
+        if ($('div#topnav a[href="/foro/"]').length > 0 && $("div.live_info").length === 0) {
+            var $modlist = $('<div class="box"><div id="modlist"><h3>Moderadores</h3></div></div>').addClass(!UserTools.isDark ? "modlistblanco" : "modlistnegro").appendTo("div.smallcol, div.tinycol");
+            var id = $("input#fid").attr("value");
+            if (typeof mods[id] === "undefined") {
+                $("<p/>").html("<span>Este foro no tiene mods o no están listados.</span>").appendTo($modlist);
             } else {
-                // Hilo normal
-                $("#nav_bar #userinfo").clone().removeAttr("id").addClass("ut-linksfooter").insertAfter('form#postform[action="/foro/post_action.php"]').prepend('<li><a href="/foro/spy">Spy</a></li><li> |</li>');
-                $(".tpanel #mmform").closest("div").css("margin-top", "55px");
-                $(".ut-linksfooter a").removeAttr("id");
-            }
-            if (UserTools.isDark || UserTools.options.get("linksfooteroscuro")) {
-                $(".ut-linksfooter").addClass("ut-linksfooter-negro");
-            } else {
-                $(".ut-linksfooter").addClass("ut-linksfooter-blanco");
+                $.each(mods[id], function(i, v) {
+                    $("<a/>").html(v).attr("href", "/id/" + v + "").append("<br />").appendTo($modlist);
+                });
             }
         }
     });
 })(jQuery, window.UserTools);
 
-(function($, UserTools) {
-    UserTools.options.setDefault("tablamods", true);
-    // TODO: Hay alguna razón para que esto no sea un objeto en lugar de array?
-    var mods = [ [ "nulo" ], [ "bazoo", "jadgix", "J40", "RaymaN", "TazzMaTazz" ], [ "Eristoff", "kalinka-" ], [ "aLeX", "Josekron", "Loa", "MegalomaniaC", "mongui", "Prava" ], [ "" ], [ "" ], [ "Atoll", "Bloody", "Eristoff", "Kails", "JMBaDBoY", "Prava", "PruDeN", "sacnoth" ], [ "abichuela", "AG", "alejo", "Ch4iNeR", "cm07", "Korso", "lb_nacho", "Netzach", "VipeR_CS" ], [ "" ], [ "Kaos", "PiradoIV", "elkaoD" ], [ "TNx7", "tutitin" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "Kaneas", "TNx7" ], [ "" ], [ "" ], [ "Cryoned", "Dream-MV", "esvarianzza" ], [ "darkavm", "ElKedao", "Privatovic", "ukuki" ], [ "" ], [ "" ], [ "Midgard", "StumKrav", "thunder_" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "Eristoff", "ReYzell" ], [ "Andy", "eisenfaust", "ISAILOVIC", "JMBaDBoY", "loko_man", "ruben132", "Sh1n0d4", "t0rrY" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "Hir0shz", "Ligia", "ManOwaR", "sPoiLeR" ], [ "" ], [ "ferk", "HaZuKi", "horvathzeros", "J40" ], [ "" ], [ "dangerous", "zashael" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "BigmAK", "MaSqUi", "tutitin", "XaViMeTaL" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "Cheester", "cuerpi", "darkavm", "sk_sk4t3r", "TNx7", "Txentx0" ], [ "dangerous", "spyro512" ], [ "" ], [ "" ], [ "" ], [ "GR33N" ], [ "" ], [ "" ], [ "Snorky", "spyro512" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "" ], [ "JMBaDBoY", "Sirius_spa", "suggus", "ZaGo" ], [ "granaino127", "SaBaNdIjA" ], [ "granaino127", "SaBaNdIjA" ], [ "darkavm", "GryF", "Kb", "lb_nacho", "-Power" ], [ "" ], [ "" ], [ "ElKedao", "darkavm", "dicon", "sk_sk4t3r" ], [ "" ], [ "" ], [ "" ], [ "Atoll", "ZaGo" ], [ "DeNz1L", "kaitoo", "NosFeR_" ], [ "Skelus" ], [ "darkavm", "Dolz", "Txentx0", "urrako" ], [ "babri", "dicon", "RoDRa", "Spank" ], [ "iosp", "Hogwarts", "lb_nacho" ], [ "zashael" ], [ "Charly-", "edvan", "frostttt", "Kazuya_", "zashael" ], [ "0buS", "RaymaN", "sPoiLeR" ], [ "CsNarsil", "CybeR" ], [ "eisenfaust" ], [ "bazoo", "StumKrav", "thunder_" ], [ "DarkHawX", "Korso", "Netzach", "StumKrav" ], [ "benitogb", "BigmAK" ], [ "" ], [ "Andy", "ISAILOVIC", "JMBaDBoY", "loko_man", "ruben132", "Sh1n0d4", "t0rrY" ], [ "" ], [ "allmy", "naete", "slakk", "StumKrav", "thunder_" ], [ "gonya707", "TRON" ], [ "babri", "RoninPiros" ], [ "Bidroid", "MagicAnnii" ], [ "ChaRliFuM", "menolikeyou", "undimmer" ], [ "locof", "Pedrosa7", "Syuk" ], [ "" ], [ "alexander", "ferk", "horvathzeros", "J40" ], [ "" ], [ "KinachO" ], [ "cm07", "RoninPiros" ], [ "" ], [ "Rundull" ], [ "dangerous" ], [ "HeXaN", "Prostyler", "thunder_" ], [ "" ], [ "" ], [ "" ] ];
-    // Mods de cada foro
-    if (UserTools.options.get("tablamods")) {
-        $(function() {
-            if ($('div#topnav a[href="/foro/"]').length > 0 && $("div.live_info").length == 0) {
-                $("div.smallcol, div.tinycol").append('<div class="box"><div id="modlist"><h3>Moderadores</h3></div></div>');
-                //var url = window.location.pathname;
-                //var id = url.split("/")[2];
-                var id = $("input#fid").attr("value");
-                $.each(mods[id], function(i, v) {
-                    if (mods[id] == "") {
-                        $("<p/>").html("<span>Este foro no tiene mods o no están listados.</span>").appendTo("#modlist");
-                    } else {
-                        //$('<li/>').html(v).appendTo('#modlist');
-                        $("<a/>").html(v).attr("href", "/id/" + v + "").append("<br />").appendTo("#modlist");
-                    }
-                });
-            }
-            if (UserTools.isDark == 0) {
-                $("#modlist").addClass("modlistblanco");
-            } else {
-                $("#modlist").addClass("modlistnegro");
-            }
-        });
-    }
-})(jQuery, window.UserTools);
-
+/*
+ * Marcápaginas en los posts a los que entras directamente (URLs acabas en #xx...)
+ */
 (function($, UserTools) {
     UserTools.options.setDefault("marcapaginas", true);
-    if (UserTools.options.get("marcapaginas")) {
-        $(function() {
-            $("div.mark").attr("style", 'background-image: url("http://www.mvusertools.com/ext/img/marcapaginas2.png") !important; background-repeat: no-repeat !important; background-position: 100px top !important;');
-        });
-    }
+    UserTools.options.$("marcapaginas", function() {
+        $("div.mark").attr("style", 'background-image: url("http://www.mvusertools.com/ext/img/marcapaginas2.png") !important; background-repeat: no-repeat !important; background-position: 100px top !important;');
+    });
 })(jQuery, window.UserTools);
 
+/*
+ *  Muestra los avisos (favs, avisos, mensajes) en el favicon de la web.
+ */
 (function($, UserTools, Tinycon) {
     UserTools.options.setDefault("favicon", true);
-    // Avisos en el favicon
-    if (UserTools.options.get("favicon")) {
-        $(function() {
-            var utnoti = $('#userinfo a[href^="/foro/favoritos"] strong.bubble').html();
-            var utavisos = $('#userinfo a[href^="/notificaciones"] strong.bubble').html();
-            var utmsj = $('#userinfo a[href^="/mensajes"] strong.bubble').html();
-            if (utnoti === undefined) {
-                var utnoti_int = parseInt(0, 10);
-            } else {
-                var utnoti_int = parseInt($('#userinfo a[href^="/foro/favoritos"] strong.bubble').html(), 10);
-            }
-            if (utavisos === undefined) {
-                var utavisos_int = parseInt(0, 10);
-            } else {
-                var utavisos_int = parseInt($('#userinfo a[href^="/notificaciones"] strong.bubble').html(), 10);
-            }
-            if (utmsj === undefined) {
-                var utmsj_int = parseInt(0, 10);
-            } else {
-                var utmsj_int = parseInt($('#userinfo a[href^="/mensajes"] strong.bubble').html(), 10);
-            }
-            var utavisostotal = utnoti_int + utmsj_int + utavisos_int;
-            $("body").addClass(utavisostotal.toString());
-            Tinycon.setBubble(utavisostotal);
-            Tinycon.setOptions({
-                fallback: true
-            });
+    UserTools.options.$("favicon", function() {
+        var favs = $('#userinfo a[href^="/foro/favoritos"] strong.bubble').html();
+        var avisos = $('#userinfo a[href^="/notificaciones"] strong.bubble').html();
+        var mensajes = $('#userinfo a[href^="/mensajes"] strong.bubble').html();
+        var total = 0;
+        if (typeof notificaciones !== "undefined") {
+            total += parseInt(favs, 10);
+        }
+        if (typeof avisos !== "undefined") {
+            total += parseInt(avisos, 10);
+        }
+        if (typeof mensajes !== "undefined") {
+            total += parseInt(mensajes, 10);
+        }
+        Tinycon.setBubble(total.toString());
+        Tinycon.setOptions({
+            fallback: true
         });
-    }
+    });
 })(jQuery, window.UserTools, Tinycon);
 
 (function($) {
-    // Botonera en formulario extendido
-    $('button[accesskey="b"]').hide();
-    $('<button class="alt bleft bb" accesskey="b" type="button" onclick="bbstyle(0)">b</button>').insertAfter('button[accesskey="b"]');
-    $('button[accesskey="i"]').hide();
-    $('<button class="alt bcenter bi" accesskey="i" type="button" onclick="bbstyle(2)">i</button><button class="alt bcenter2 bu" accesskey="u" type="button" onclick="bbstyle(4)">u</button><button id="ut-boton-s" class="alt bright bs" accesskey="x" type="button">s</button><button class="alt bsolo" id="ut-boton-center" accesskey="c" type="button" title="[center]"><a class="sprite bcentericon"></a></button><button class="alt bsolo" id="ut-boton-list" type="button" title="[list] Usar * para cada elemento de la lista"><a class="blist sprite"></a></button>').insertAfter('button[accesskey="i"]');
-    $('button[accesskey="l"]').hide();
-    $('<button class="alt bsolo" accesskey="l" type="button" onclick="bbstyle(8)">[url=]</button>').insertAfter('button[accesskey="l"]');
-    $('button[accesskey="m"]').hide();
-    $('<button class="alt bleft" accesskey="m" type="button" onclick="bbstyle(10)" title="[img]"><a class="bimg sprite"></a></button>').insertAfter('button[accesskey="m"]');
-    $('button[accesskey="v"]').hide();
-    $('<button class="alt bcenter" accesskey="v" type="button" onclick="bbstyle(12)" title="[video]"><a class="bvideo sprite"></a></button><button title="[audio]" id="ut-boton-audio" class="alt bright" type="button"><a class="baudio sprite"></a></button>').insertAfter('button[accesskey="v"]');
-    $('button[accesskey="s"]').hide();
-    $('<button class="alt bleft" accesskey="s" type="button" onclick="bbstyle(14)">[spoiler]</button>').insertAfter('button[accesskey="s"]');
-    $('button[accesskey="d"]').hide();
-    $('<button class="alt bcenter" accesskey="d" type="button" onclick="bbstyle(16)">[spoiler=]</button>').insertAfter('button[accesskey="d"]');
-    $('button[accesskey="n"]').hide();
-    $('<button class="alt bright" accesskey="n" type="button" onclick="bbstyle(18)">NSFW</button><button title="Pulsa para ver más opciones" id="ut-boton-plus" class="alt bsolo" type="button"><a class="ut-arrow-down sprite"></a></button><script></script>').insertAfter('button[accesskey="n"]');
-    $("#ut-boton-s").click(function() {
-        if ($("textarea#cuerpo").getSelection().text.length > 0) {
-            $("textarea#cuerpo").replaceSelection("[s]" + $("textarea#cuerpo").getSelection().text + "[/s]").setCaretPos();
-        } else {
-            $("textarea#cuerpo").insertAtCaretPos("[s][/s]").setCaretPos($("textarea#cuerpo").getSelection().end - 3);
-        }
-    });
-    $("#ut-boton-center").click(function() {
-        if ($("textarea#cuerpo").getSelection().text.length > 0) {
-            $("textarea#cuerpo").replaceSelection("[center]" + $("textarea#cuerpo").getSelection().text + "[/center]").setCaretPos();
-        } else {
-            $("textarea#cuerpo").insertAtCaretPos("[center][/center]").setCaretPos($("textarea#cuerpo").getSelection().end - 8);
-        }
-    });
-    $("#ut-boton-list").click(function() {
-        if ($("textarea#cuerpo").getSelection().text.length > 0) {
-            $("textarea#cuerpo").replaceSelection("[list]" + $("textarea#cuerpo").getSelection().text + "[/list]").setCaretPos();
-        } else {
-            $("textarea#cuerpo").insertAtCaretPos("[list][/list]").setCaretPos($("textarea#cuerpo").getSelection().end - 6);
-        }
-    });
-    $("#ut-boton-audio").click(function() {
-        if ($("textarea#cuerpo").getSelection().text.length > 0) {
-            $("textarea#cuerpo").replaceSelection("[audio]" + $("textarea#cuerpo").getSelection().text + "[/audio]").setCaretPos();
-        } else {
-            $("textarea#cuerpo").insertAtCaretPos("[audio][/audio]").setCaretPos($("textarea#cuerpo").getSelection().end - 7);
-        }
-    });
-    // Segunda linea en la botonera del formulario extendido
-    var utsegundabarra = '<button class="alt bsolo" id="ut-boton-bar" type="button">[bar]</button><button class="alt bleft" type="button" onclick="bbstyle(20)">[code]</button><button class="alt bright2" id="ut-boton-cmd" type="button">[cmd]</button><button id="ut-button-macros" class="alt bsolo" type="button">macros <i class="sprite icon-down-list"></i></button><div id="ut-button-macros-list" style="display: none;"><ul></ul><a href="#ut-dialog-menu" id="ut-button-macros-list-anadir">añadir macro</a></div>';
-    $('<div id="ut-botonera2" style="overflow: hidden;margin: 10px 0;clear: both; display: none;">' + utsegundabarra + "</div>").insertAfter('form#postear div[style="overflow: hidden;margin: 10px 0;clear: both"]');
-    $('<div id="ut-botonera2" style="overflow: hidden;margin: 10px 0;clear: both; display: none;">' + utsegundabarra + "</div>").insertAfter('form#postform div[style="overflow: hidden;margin-bottom: 10px;clear: both"]');
-    $("#ut-boton-plus").click(function() {
-        if ($("#ut-botonera2").is(":visible")) {
-            $("#ut-botonera2").slideUp();
-            $("#ut-boton-plus a").toggleClass("ut-arrow-down").toggleClass("ut-arrow-up");
-            $("#ut-boton-plus").attr("title", "Pulsa para ver más opciones");
-        } else {
-            $("#ut-botonera2").slideDown();
-            $("#ut-boton-plus a").toggleClass("ut-arrow-down").toggleClass("ut-arrow-up");
-            $("#ut-boton-plus").attr("title", "Pulsa para ocultar la segunda linea de opciones");
-        }
-    });
-    $("#ut-boton-bar").click(function() {
-        if ($("textarea#cuerpo").getSelection().text.length > 0) {
-            $("textarea#cuerpo").replaceSelection("[bar]" + $("textarea#cuerpo").getSelection().text + "[/bar]").setCaretPos();
-        } else {
-            $("textarea#cuerpo").insertAtCaretPos("[bar][/bar]").setCaretPos($("textarea#cuerpo").getSelection().end - 5);
-        }
-    });
-    $("#ut-boton-cmd").click(function() {
-        if ($("textarea#cuerpo").getSelection().text.length > 0) {
-            $("textarea#cuerpo").replaceSelection("[cmd]" + $("textarea#cuerpo").getSelection().text + "[/cmd]").setCaretPos();
-        } else {
-            $("textarea#cuerpo").insertAtCaretPos("[cmd][/cmd]").setCaretPos($("textarea#cuerpo").getSelection().end - 5);
-        }
-    });
-    $("#ut-button-macros").click(function() {
-        if ($('#ut-button-macros-list[style="display: none;"]').length) {
-            $("#ut-button-macros-list").show();
-        } else {
+    $(function() {
+        // Botonera en formulario extendido
+        $('button[accesskey="b"]').hide();
+        $('<button class="alt bleft bb" accesskey="b" type="button" onclick="bbstyle(0)">b</button>').insertAfter('button[accesskey="b"]');
+        $('button[accesskey="i"]').hide();
+        $('<button class="alt bcenter bi" accesskey="i" type="button" onclick="bbstyle(2)">i</button><button class="alt bcenter2 bu" accesskey="u" type="button" onclick="bbstyle(4)">u</button><button id="ut-boton-s" class="alt bright bs" accesskey="x" type="button">s</button><button class="alt bsolo" id="ut-boton-center" accesskey="c" type="button" title="[center]"><a class="sprite bcentericon"></a></button><button class="alt bsolo" id="ut-boton-list" type="button" title="[list] Usar * para cada elemento de la lista"><a class="blist sprite"></a></button>').insertAfter('button[accesskey="i"]');
+        $('button[accesskey="l"]').hide();
+        $('<button class="alt bsolo" accesskey="l" type="button" onclick="bbstyle(8)">[url=]</button>').insertAfter('button[accesskey="l"]');
+        $('button[accesskey="m"]').hide();
+        $('<button class="alt bleft" accesskey="m" type="button" onclick="bbstyle(10)" title="[img]"><a class="bimg sprite"></a></button>').insertAfter('button[accesskey="m"]');
+        $('button[accesskey="v"]').hide();
+        $('<button class="alt bcenter" accesskey="v" type="button" onclick="bbstyle(12)" title="[video]"><a class="bvideo sprite"></a></button><button title="[audio]" id="ut-boton-audio" class="alt bright" type="button"><a class="baudio sprite"></a></button>').insertAfter('button[accesskey="v"]');
+        $('button[accesskey="s"]').hide();
+        $('<button class="alt bleft" accesskey="s" type="button" onclick="bbstyle(14)">[spoiler]</button>').insertAfter('button[accesskey="s"]');
+        $('button[accesskey="d"]').hide();
+        $('<button class="alt bcenter" accesskey="d" type="button" onclick="bbstyle(16)">[spoiler=]</button>').insertAfter('button[accesskey="d"]');
+        $('button[accesskey="n"]').hide();
+        $('<button class="alt bright" accesskey="n" type="button" onclick="bbstyle(18)">NSFW</button><button title="Pulsa para ver más opciones" id="ut-boton-plus" class="alt bsolo" type="button"><a class="ut-arrow-down sprite"></a></button><script></script>').insertAfter('button[accesskey="n"]');
+        $("#ut-boton-s").click(function() {
+            if ($("textarea#cuerpo").getSelection().text.length > 0) {
+                $("textarea#cuerpo").replaceSelection("[s]" + $("textarea#cuerpo").getSelection().text + "[/s]").setCaretPos();
+            } else {
+                $("textarea#cuerpo").insertAtCaretPos("[s][/s]").setCaretPos($("textarea#cuerpo").getSelection().end - 3);
+            }
+        });
+        $("#ut-boton-center").click(function() {
+            if ($("textarea#cuerpo").getSelection().text.length > 0) {
+                $("textarea#cuerpo").replaceSelection("[center]" + $("textarea#cuerpo").getSelection().text + "[/center]").setCaretPos();
+            } else {
+                $("textarea#cuerpo").insertAtCaretPos("[center][/center]").setCaretPos($("textarea#cuerpo").getSelection().end - 8);
+            }
+        });
+        $("#ut-boton-list").click(function() {
+            if ($("textarea#cuerpo").getSelection().text.length > 0) {
+                $("textarea#cuerpo").replaceSelection("[list]" + $("textarea#cuerpo").getSelection().text + "[/list]").setCaretPos();
+            } else {
+                $("textarea#cuerpo").insertAtCaretPos("[list][/list]").setCaretPos($("textarea#cuerpo").getSelection().end - 6);
+            }
+        });
+        $("#ut-boton-audio").click(function() {
+            if ($("textarea#cuerpo").getSelection().text.length > 0) {
+                $("textarea#cuerpo").replaceSelection("[audio]" + $("textarea#cuerpo").getSelection().text + "[/audio]").setCaretPos();
+            } else {
+                $("textarea#cuerpo").insertAtCaretPos("[audio][/audio]").setCaretPos($("textarea#cuerpo").getSelection().end - 7);
+            }
+        });
+        // Segunda linea en la botonera del formulario extendido
+        var utsegundabarra = '<button class="alt bsolo" id="ut-boton-bar" type="button">[bar]</button><button class="alt bleft" type="button" onclick="bbstyle(20)">[code]</button><button class="alt bright2" id="ut-boton-cmd" type="button">[cmd]</button><button id="ut-button-macros" class="alt bsolo" type="button">macros <i class="sprite icon-down-list"></i></button><div id="ut-button-macros-list" style="display: none;"><ul></ul><a href="#ut-dialog-menu" id="ut-button-macros-list-anadir">añadir macro</a></div>';
+        $('<div id="ut-botonera2" style="overflow: hidden;margin: 10px 0;clear: both; display: none;">' + utsegundabarra + "</div>").insertAfter('form#postear div[style="overflow: hidden;margin: 10px 0;clear: both"]');
+        $('<div id="ut-botonera2" style="overflow: hidden;margin: 10px 0;clear: both; display: none;">' + utsegundabarra + "</div>").insertAfter('form#postform div[style="overflow: hidden;margin-bottom: 10px;clear: both"]');
+        $("#ut-boton-plus").click(function() {
+            if ($("#ut-botonera2").is(":visible")) {
+                $("#ut-botonera2").slideUp();
+                $("#ut-boton-plus a").toggleClass("ut-arrow-down").toggleClass("ut-arrow-up");
+                $("#ut-boton-plus").attr("title", "Pulsa para ver más opciones");
+            } else {
+                $("#ut-botonera2").slideDown();
+                $("#ut-boton-plus a").toggleClass("ut-arrow-down").toggleClass("ut-arrow-up");
+                $("#ut-boton-plus").attr("title", "Pulsa para ocultar la segunda linea de opciones");
+            }
+        });
+        $("#ut-boton-bar").click(function() {
+            if ($("textarea#cuerpo").getSelection().text.length > 0) {
+                $("textarea#cuerpo").replaceSelection("[bar]" + $("textarea#cuerpo").getSelection().text + "[/bar]").setCaretPos();
+            } else {
+                $("textarea#cuerpo").insertAtCaretPos("[bar][/bar]").setCaretPos($("textarea#cuerpo").getSelection().end - 5);
+            }
+        });
+        $("#ut-boton-cmd").click(function() {
+            if ($("textarea#cuerpo").getSelection().text.length > 0) {
+                $("textarea#cuerpo").replaceSelection("[cmd]" + $("textarea#cuerpo").getSelection().text + "[/cmd]").setCaretPos();
+            } else {
+                $("textarea#cuerpo").insertAtCaretPos("[cmd][/cmd]").setCaretPos($("textarea#cuerpo").getSelection().end - 5);
+            }
+        });
+        $("#ut-button-macros").click(function() {
+            if ($('#ut-button-macros-list[style="display: none;"]').length) {
+                $("#ut-button-macros-list").show();
+            } else {
+                $("#ut-button-macros-list").hide();
+            }
+        });
+        $("#ut-button-macros-list").mouseup(function() {
+            return false;
+        });
+        $("#ut-button-macros").mouseup(function() {
+            return false;
+        });
+        $(document).mouseup(function() {
             $("#ut-button-macros-list").hide();
-        }
-    });
-    $("#ut-button-macros-list").mouseup(function() {
-        return false;
-    });
-    $("#ut-button-macros").mouseup(function() {
-        return false;
-    });
-    $(document).mouseup(function() {
-        $("#ut-button-macros-list").hide();
-    });
-    $("#ut-button-macros-list-anadir").click(function() {
-        $("#ut-mask-menu").show();
-        $("#ut-dialog-menu").show();
-        $("#ut-menu-tab1").removeClass("active");
-        $("#ut-menu-tab2").removeClass("active");
-        $("#ut-menu-tab3").removeClass("active");
-        $("#ut-menu-tab4").addClass("active");
-        $("#ut-menu-tabla1").hide();
-        $("#ut-menu-tabla2").hide();
-        $("#ut-menu-tabla3").hide();
-        $("#ut-menu-tabla4").show();
-    });
-    // Botonera en el fast-edit
-    if (!UserTools.live) {
-        var botonessolounavez = function() {
-            var fasteditbuttons = function() {
-                $('<div style="overflow: hidden;margin: 0 0px 10px -5px;clear: both"><button type="button" accesskey="b" class="alt bleft bb" id="ut-boton-b-fast">b</button><button type="button" accesskey="i" class="alt bcenter bi" id="ut-boton-i-fast">i</button><button type="button" accesskey="u" class="alt bcenter2 bu" id="ut-boton-u-fast">u</button><button type="button" accesskey="x" class="alt bright bs" id="ut-boton-s-fast">s</button><button title="[center]" type="button" accesskey="c" id="ut-boton-center-fast" class="alt bsolo"><a class="sprite bcentericon"></a></button><button title="[list] Usar * para cada elemento de la lista" type="button" id="ut-boton-list-fast" class="alt bsolo"><a class="blist sprite"></a></button><button type="button" accesskey="l" class="alt bsolo" id="ut-boton-url-fast">[url=]</button><button title="[img]" type="button" accesskey="m" class="alt bleft" id="ut-boton-img-fast"><a class="bimg sprite"></a></button><button title="[video]" type="button" accesskey="v" class="alt bcenter" id="ut-boton-video-fast"><a class="bvideo sprite"></a></button><button type="button" class="alt bright" title="[audio]" id="ut-boton-audio-fast"><a class="baudio sprite"></a></button><button type="button" accesskey="s" class="alt bleft" id="ut-boton-spoiler-fast">[spoiler]</button><button type="button" accesskey="d" class="alt bcenter" id="ut-boton-spoiler2-fast">[spoiler=]</button><button type="button" accesskey="n" class="alt bright" id="ut-boton-nsfw-fast">NSFW</button><button type="button" id="ut-boton-bar-fast" class="alt bsolo">[bar]</button><button type="button" class="alt bsolo" id="ut-boton-code-fast">[code]</button></div>').insertBefore('div.msg div.body div textarea:not("div.extraportada textarea")');
+        });
+        $("#ut-button-macros-list-anadir").click(function() {
+            $("#ut-mask-menu").show();
+            $("#ut-dialog-menu").show();
+            $("#ut-menu-tab1").removeClass("active");
+            $("#ut-menu-tab2").removeClass("active");
+            $("#ut-menu-tab3").removeClass("active");
+            $("#ut-menu-tab4").addClass("active");
+            $("#ut-menu-tabla1").hide();
+            $("#ut-menu-tabla2").hide();
+            $("#ut-menu-tabla3").hide();
+            $("#ut-menu-tabla4").show();
+        });
+        // Botonera en el fast-edit
+        if (!UserTools.live) {
+            var botonessolounavez = function() {
+                var fasteditbuttons = function() {
+                    $('<div style="overflow: hidden;margin: 0 0px 10px -5px;clear: both"><button type="button" accesskey="b" class="alt bleft bb" id="ut-boton-b-fast">b</button><button type="button" accesskey="i" class="alt bcenter bi" id="ut-boton-i-fast">i</button><button type="button" accesskey="u" class="alt bcenter2 bu" id="ut-boton-u-fast">u</button><button type="button" accesskey="x" class="alt bright bs" id="ut-boton-s-fast">s</button><button title="[center]" type="button" accesskey="c" id="ut-boton-center-fast" class="alt bsolo"><a class="sprite bcentericon"></a></button><button title="[list] Usar * para cada elemento de la lista" type="button" id="ut-boton-list-fast" class="alt bsolo"><a class="blist sprite"></a></button><button type="button" accesskey="l" class="alt bsolo" id="ut-boton-url-fast">[url=]</button><button title="[img]" type="button" accesskey="m" class="alt bleft" id="ut-boton-img-fast"><a class="bimg sprite"></a></button><button title="[video]" type="button" accesskey="v" class="alt bcenter" id="ut-boton-video-fast"><a class="bvideo sprite"></a></button><button type="button" class="alt bright" title="[audio]" id="ut-boton-audio-fast"><a class="baudio sprite"></a></button><button type="button" accesskey="s" class="alt bleft" id="ut-boton-spoiler-fast">[spoiler]</button><button type="button" accesskey="d" class="alt bcenter" id="ut-boton-spoiler2-fast">[spoiler=]</button><button type="button" accesskey="n" class="alt bright" id="ut-boton-nsfw-fast">NSFW</button><button type="button" id="ut-boton-bar-fast" class="alt bsolo">[bar]</button><button type="button" class="alt bsolo" id="ut-boton-code-fast">[code]</button></div>').insertBefore('div.msg div.body div textarea:not("div.extraportada textarea")');
+                };
+                $(document).one("mouseenter", "div.msg div.body div textarea", function() {
+                    fasteditbuttons();
+                });
             };
-            $(document).one("mouseenter", "div.msg div.body div textarea", function() {
-                fasteditbuttons();
+            $(botonessolounavez);
+            $(document).on("click", "button.cancelButton", botonessolounavez);
+            $(document).on("click", "button.saveButton", botonessolounavez);
+            $(document).on("click", "#ut-boton-b-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[b]" + $("div.msg div.body div textarea").getSelection().text + "[/b]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[b][/b]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 3);
+                }
             });
-        };
-        $(botonessolounavez);
-        $(document).on("click", "button.cancelButton", botonessolounavez);
-        $(document).on("click", "button.saveButton", botonessolounavez);
-        $(document).on("click", "#ut-boton-b-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[b]" + $("div.msg div.body div textarea").getSelection().text + "[/b]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[b][/b]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 3);
-            }
-        });
-        $(document).on("click", "#ut-boton-i-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[i]" + $("div.msg div.body div textarea").getSelection().text + "[/i]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[i][/i]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 3);
-            }
-        });
-        $(document).on("click", "#ut-boton-u-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[u]" + $("div.msg div.body div textarea").getSelection().text + "[/u]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[u][/u]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 3);
-            }
-        });
-        $(document).on("click", "#ut-boton-s-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[s]" + $("div.msg div.body div textarea").getSelection().text + "[/s]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[s][/s]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 3);
-            }
-        });
-        $(document).on("click", "#ut-boton-center-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[center]" + $("div.msg div.body div textarea").getSelection().text + "[/center]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[center][/center]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 8);
-            }
-        });
-        $(document).on("click", "#ut-boton-list-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[list]" + $("div.msg div.body div textarea").getSelection().text + "[/list]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[list][/list]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 6);
-            }
-        });
-        $(document).on("click", "#ut-boton-url-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[url=]" + $("div.msg div.body div textarea").getSelection().text + "[/url]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[url=][/url]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 5);
-            }
-        });
-        $(document).on("click", "#ut-boton-img-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[img]" + $("div.msg div.body div textarea").getSelection().text + "[/img]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[img][/img]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 5);
-            }
-        });
-        $(document).on("click", "#ut-boton-video-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[video]" + $("div.msg div.body div textarea").getSelection().text + "[/video]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[video][/video]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 7);
-            }
-        });
-        $(document).on("click", "#ut-boton-audio-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[audio]" + $("div.msg div.body div textarea").getSelection().text + "[/audio]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[audio][/audio]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 7);
-            }
-        });
-        $(document).on("click", "#ut-boton-spoiler-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[spoiler]" + $("div.msg div.body div textarea").getSelection().text + "[/spoiler]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[spoiler][/spoiler]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 9);
-            }
-        });
-        $(document).on("click", "#ut-boton-spoiler2-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[spoiler=]" + $("div.msg div.body div textarea").getSelection().text + "[/spoiler]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[spoiler=][/spoiler]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 9);
-            }
-        });
-        $(document).on("click", "#ut-boton-nsfw-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[spoiler=NSFW]" + $("div.msg div.body div textarea").getSelection().text + "[/spoiler]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[spoiler=NSFW][/spoiler]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 9);
-            }
-        });
-        $(document).on("click", "#ut-boton-bar-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[bar]" + $("div.msg div.body div textarea").getSelection().text + "[/bar]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[bar][/bar]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 5);
-            }
-        });
-        $(document).on("click", "#ut-boton-code-fast", function() {
-            if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
-                $("div.msg div.body div textarea").replaceSelection("[code]" + $("div.msg div.body div textarea").getSelection().text + "[/code]").setCaretPos();
-            } else {
-                $("div.msg div.body div textarea").insertAtCaretPos("[code][/code]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 6);
-            }
-        });
-    }
-    // Botonera en el perfil
-    $('<div style="overflow: hidden;margin: 0 0 5px 0;clear: both"><button type="button" accesskey="b" class="alt bleft bb" id="ut-boton-b-perfil">b</button><button type="button" accesskey="i" class="alt bcenter bi" id="ut-boton-i-perfil">i</button><button type="button" accesskey="u" class="alt bright bu" id="ut-boton-u-perfil">u</button><button type="button" accesskey="l" class="alt bsolo" id="ut-boton-url-perfil">[url=]</button><button type="button" accesskey="s" class="alt bleft" id="ut-boton-spoiler-perfil">[spoiler]</button><button type="button" accesskey="d" class="alt bcenter" id="ut-boton-spoiler2-perfil">[spoiler=]</button><button type="button" accesskey="n" class="alt bright" id="ut-boton-nsfw-perfil">NSFW</button></div>').insertBefore('body.usuarios textarea[name="info"]');
-    $("#ut-boton-b-perfil").click(function() {
-        if ($('textarea[name="info"]').getSelection().text.length > 0) {
-            $('textarea[name="info"]').replaceSelection("[b]" + $('textarea[name="info"]').getSelection().text + "[/b]").setCaretPos();
-        } else {
-            $('textarea[name="info"]').insertAtCaretPos("[b][/b]").setCaretPos($('textarea[name="info"]').getSelection().end - 3);
+            $(document).on("click", "#ut-boton-i-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[i]" + $("div.msg div.body div textarea").getSelection().text + "[/i]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[i][/i]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 3);
+                }
+            });
+            $(document).on("click", "#ut-boton-u-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[u]" + $("div.msg div.body div textarea").getSelection().text + "[/u]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[u][/u]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 3);
+                }
+            });
+            $(document).on("click", "#ut-boton-s-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[s]" + $("div.msg div.body div textarea").getSelection().text + "[/s]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[s][/s]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 3);
+                }
+            });
+            $(document).on("click", "#ut-boton-center-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[center]" + $("div.msg div.body div textarea").getSelection().text + "[/center]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[center][/center]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 8);
+                }
+            });
+            $(document).on("click", "#ut-boton-list-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[list]" + $("div.msg div.body div textarea").getSelection().text + "[/list]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[list][/list]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 6);
+                }
+            });
+            $(document).on("click", "#ut-boton-url-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[url=]" + $("div.msg div.body div textarea").getSelection().text + "[/url]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[url=][/url]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 5);
+                }
+            });
+            $(document).on("click", "#ut-boton-img-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[img]" + $("div.msg div.body div textarea").getSelection().text + "[/img]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[img][/img]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 5);
+                }
+            });
+            $(document).on("click", "#ut-boton-video-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[video]" + $("div.msg div.body div textarea").getSelection().text + "[/video]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[video][/video]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 7);
+                }
+            });
+            $(document).on("click", "#ut-boton-audio-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[audio]" + $("div.msg div.body div textarea").getSelection().text + "[/audio]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[audio][/audio]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 7);
+                }
+            });
+            $(document).on("click", "#ut-boton-spoiler-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[spoiler]" + $("div.msg div.body div textarea").getSelection().text + "[/spoiler]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[spoiler][/spoiler]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 9);
+                }
+            });
+            $(document).on("click", "#ut-boton-spoiler2-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[spoiler=]" + $("div.msg div.body div textarea").getSelection().text + "[/spoiler]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[spoiler=][/spoiler]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 9);
+                }
+            });
+            $(document).on("click", "#ut-boton-nsfw-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[spoiler=NSFW]" + $("div.msg div.body div textarea").getSelection().text + "[/spoiler]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[spoiler=NSFW][/spoiler]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 9);
+                }
+            });
+            $(document).on("click", "#ut-boton-bar-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[bar]" + $("div.msg div.body div textarea").getSelection().text + "[/bar]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[bar][/bar]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 5);
+                }
+            });
+            $(document).on("click", "#ut-boton-code-fast", function() {
+                if ($("div.msg div.body div textarea").getSelection().text.length > 0) {
+                    $("div.msg div.body div textarea").replaceSelection("[code]" + $("div.msg div.body div textarea").getSelection().text + "[/code]").setCaretPos();
+                } else {
+                    $("div.msg div.body div textarea").insertAtCaretPos("[code][/code]").setCaretPos($("div.msg div.body div textarea").getSelection().end - 6);
+                }
+            });
         }
-    });
-    $("#ut-boton-i-perfil").click(function() {
-        if ($('textarea[name="info"]').getSelection().text.length > 0) {
-            $('textarea[name="info"]').replaceSelection("[i]" + $('textarea[name="info"]').getSelection().text + "[/i]").setCaretPos();
-        } else {
-            $('textarea[name="info"]').insertAtCaretPos("[i][/i]").setCaretPos($('textarea[name="info"]').getSelection().end - 3);
-        }
-    });
-    $("#ut-boton-u-perfil").click(function() {
-        if ($('textarea[name="info"]').getSelection().text.length > 0) {
-            $('textarea[name="info"]').replaceSelection("[u]" + $('textarea[name="info"]').getSelection().text + "[/u]").setCaretPos();
-        } else {
-            $('textarea[name="info"]').insertAtCaretPos("[u][/u]").setCaretPos($('textarea[name="info"]').getSelection().end - 3);
-        }
-    });
-    $("#ut-boton-url-perfil").click(function() {
-        if ($('textarea[name="info"]').getSelection().text.length > 0) {
-            $('textarea[name="info"]').replaceSelection("[url=]" + $('textarea[name="info"]').getSelection().text + "[/url]").setCaretPos();
-        } else {
-            $('textarea[name="info"]').insertAtCaretPos("[url=][/url]").setCaretPos($('textarea[name="info"]').getSelection().end - 5);
-        }
-    });
-    $("#ut-boton-spoiler-perfil").click(function() {
-        if ($('textarea[name="info"]').getSelection().text.length > 0) {
-            $('textarea[name="info"]').replaceSelection("[spoiler]" + $('textarea[name="info"]').getSelection().text + "[/spoiler]").setCaretPos();
-        } else {
-            $('textarea[name="info"]').insertAtCaretPos("[spoiler][/spoiler]").setCaretPos($('textarea[name="info"]').getSelection().end - 9);
-        }
-    });
-    $("#ut-boton-spoiler2-perfil").click(function() {
-        if ($('textarea[name="info"]').getSelection().text.length > 0) {
-            $('textarea[name="info"]').replaceSelection("[spoiler=]" + $('textarea[name="info"]').getSelection().text + "[/spoiler]").setCaretPos();
-        } else {
-            $('textarea[name="info"]').insertAtCaretPos("[spoiler=][/spoiler]").setCaretPos($('textarea[name="info"]').getSelection().end - 9);
-        }
-    });
-    $("#ut-boton-nsfw-perfil").click(function() {
-        if ($('textarea[name="info"]').getSelection().text.length > 0) {
-            $('textarea[name="info"]').replaceSelection("[spoiler=NSFW]" + $('textarea[name="info"]').getSelection().text + "[/spoiler]").setCaretPos();
-        } else {
-            $('textarea[name="info"]').insertAtCaretPos("[spoiler=NSFW][/spoiler]").setCaretPos($('textarea[name="info"]').getSelection().end - 9);
-        }
+        // Botonera en el perfil
+        $('<div style="overflow: hidden;margin: 0 0 5px 0;clear: both"><button type="button" accesskey="b" class="alt bleft bb" id="ut-boton-b-perfil">b</button><button type="button" accesskey="i" class="alt bcenter bi" id="ut-boton-i-perfil">i</button><button type="button" accesskey="u" class="alt bright bu" id="ut-boton-u-perfil">u</button><button type="button" accesskey="l" class="alt bsolo" id="ut-boton-url-perfil">[url=]</button><button type="button" accesskey="s" class="alt bleft" id="ut-boton-spoiler-perfil">[spoiler]</button><button type="button" accesskey="d" class="alt bcenter" id="ut-boton-spoiler2-perfil">[spoiler=]</button><button type="button" accesskey="n" class="alt bright" id="ut-boton-nsfw-perfil">NSFW</button></div>').insertBefore('body.usuarios textarea[name="info"]');
+        $("#ut-boton-b-perfil").click(function() {
+            if ($('textarea[name="info"]').getSelection().text.length > 0) {
+                $('textarea[name="info"]').replaceSelection("[b]" + $('textarea[name="info"]').getSelection().text + "[/b]").setCaretPos();
+            } else {
+                $('textarea[name="info"]').insertAtCaretPos("[b][/b]").setCaretPos($('textarea[name="info"]').getSelection().end - 3);
+            }
+        });
+        $("#ut-boton-i-perfil").click(function() {
+            if ($('textarea[name="info"]').getSelection().text.length > 0) {
+                $('textarea[name="info"]').replaceSelection("[i]" + $('textarea[name="info"]').getSelection().text + "[/i]").setCaretPos();
+            } else {
+                $('textarea[name="info"]').insertAtCaretPos("[i][/i]").setCaretPos($('textarea[name="info"]').getSelection().end - 3);
+            }
+        });
+        $("#ut-boton-u-perfil").click(function() {
+            if ($('textarea[name="info"]').getSelection().text.length > 0) {
+                $('textarea[name="info"]').replaceSelection("[u]" + $('textarea[name="info"]').getSelection().text + "[/u]").setCaretPos();
+            } else {
+                $('textarea[name="info"]').insertAtCaretPos("[u][/u]").setCaretPos($('textarea[name="info"]').getSelection().end - 3);
+            }
+        });
+        $("#ut-boton-url-perfil").click(function() {
+            if ($('textarea[name="info"]').getSelection().text.length > 0) {
+                $('textarea[name="info"]').replaceSelection("[url=]" + $('textarea[name="info"]').getSelection().text + "[/url]").setCaretPos();
+            } else {
+                $('textarea[name="info"]').insertAtCaretPos("[url=][/url]").setCaretPos($('textarea[name="info"]').getSelection().end - 5);
+            }
+        });
+        $("#ut-boton-spoiler-perfil").click(function() {
+            if ($('textarea[name="info"]').getSelection().text.length > 0) {
+                $('textarea[name="info"]').replaceSelection("[spoiler]" + $('textarea[name="info"]').getSelection().text + "[/spoiler]").setCaretPos();
+            } else {
+                $('textarea[name="info"]').insertAtCaretPos("[spoiler][/spoiler]").setCaretPos($('textarea[name="info"]').getSelection().end - 9);
+            }
+        });
+        $("#ut-boton-spoiler2-perfil").click(function() {
+            if ($('textarea[name="info"]').getSelection().text.length > 0) {
+                $('textarea[name="info"]').replaceSelection("[spoiler=]" + $('textarea[name="info"]').getSelection().text + "[/spoiler]").setCaretPos();
+            } else {
+                $('textarea[name="info"]').insertAtCaretPos("[spoiler=][/spoiler]").setCaretPos($('textarea[name="info"]').getSelection().end - 9);
+            }
+        });
+        $("#ut-boton-nsfw-perfil").click(function() {
+            if ($('textarea[name="info"]').getSelection().text.length > 0) {
+                $('textarea[name="info"]').replaceSelection("[spoiler=NSFW]" + $('textarea[name="info"]').getSelection().text + "[/spoiler]").setCaretPos();
+            } else {
+                $('textarea[name="info"]').insertAtCaretPos("[spoiler=NSFW][/spoiler]").setCaretPos($('textarea[name="info"]').getSelection().end - 9);
+            }
+        });
     });
 })(jQuery);
 
+/*
+ * Infomración del perfil en la lista de users.
+ */
 (function($, UserTools) {
+    var TIMEOUT = 1e3;
     UserTools.options.setDefault("userinfo", true);
-    // Información del perfil en la lista de users
-    if (UserTools.options.get("userinfo")) {
-        $(function() {
-            var pendingInfoBox = undefined;
-            var infoBoxX = undefined;
-            var infoBoxY = undefined;
-            function checkUserInfoBox() {
-                if (pendingInfoBox !== undefined) {
-                    launchUserInfoBox(pendingInfoBox);
-                }
-            }
-            function launchUserInfoBox() {
-                $.get("http://www.mediavida.com/id/" + pendingInfoBox, function(data) {
-                    $(".infoavatar", data).each(function() {
-                        if (pendingInfoBox == undefined) return false;
-                        $("#ajax_usercard").remove();
-                        $("body").append('<div id="ajax_usercard">' + $(this).html() + "</div>");
-                        var box = $("#ajax_usercard");
-                        if (UserTools.isDark == 0) {
-                            box.css("background-Color", "whitesmoke");
-                        } else {
-                            box.css("background-color", "#39444B");
-                        }
-                        box.css("borderRadius", "6px");
-                        box.css("padding", "10px 5px 5px 5px");
-                        box.css("position", "absolute");
-                        box.css("left", infoBoxX);
-                        box.css("top", infoBoxY);
-                        box.css("overflow", "hidden");
-                        box.css("boxShadow", "1px 1px 5px rgba(0, 0, 0, 0.25)");
-                        box.css("zIndex", "9999");
-                        var uavatar = $(".useravatar", box);
-                        uavatar.css("float", "left");
-                        uavatar.css("padding", "5px");
-                        uavatar.css("marginRight", "5px");
-                        var uinfo = $(".userinfo", box);
-                        uinfo.css("borderRadius", "6px");
-                        uinfo.css("width", "254px");
-                        uinfo.css("height", "90px");
-                        uinfo.css("backgroundColor", "#F4F6F1");
-                        uinfo.css("float", "left");
-                        uinfo.css("padding", "5px");
-                        uinfo.css("position", "relative");
-                        uinfo.css("zoom", "1");
+    UserTools.options.$("userinfo", function() {
+        var info_box = function(id, left, top) {
+            var aborted = false;
+            var request;
+            var timeout = setTimeout(function() {
+                request = $.get("http://www.mediavida.com/id/" + id, function(data) {
+                    $("#ajax_usercard").remove();
+                    var $usercard = $('<div id="ajax_usercard">' + $(".infoavatar", data).html() + "</div>");
+                    $("body").append($usercard);
+                    $usercard.css({
+                        "background-color": UserTools.isDark ? "whitesmoke" : "#39444B",
+                        borderRadius: "6px",
+                        padding: "10px 5px 5px 5px",
+                        position: "absolute",
+                        left: x,
+                        top: y,
+                        overflow: "hidden",
+                        $usercardShadow: "1px 1px 5px rgba(0, 0, 0, 0.25)",
+                        zIndex: "9999"
+                    });
+                    $(".useravatar", $usercard).css({
+                        "float": "left",
+                        padding: "5px",
+                        marginRight: "5px"
+                    });
+                    $(".userinfo", $usercard).css({
+                        borderRadius: "6px",
+                        width: "254px",
+                        height: "90px",
+                        backgroundColor: "#F4F6F1",
+                        "float": "left",
+                        padding: "5px",
+                        position: "relative",
+                        zoom: "1"
                     });
                 });
-            }
-            $(".post .autor dt a").hover(function() {
-                var offset = $(this).offset();
-                var pendingInfoBoxOld = $(this).attr("href");
-                pendingInfoBox = pendingInfoBoxOld.match(/id\/(.+)/)[1];
-                infoBoxX = offset.left - 10;
-                infoBoxY = offset.top + 14;
-                setTimeout(checkUserInfoBox, 1e3);
-            }, function() {
-                pendingInfoBox = undefined;
-                $("#ajax_usercard").remove();
-            });
-        });
-    }
+            }, TIMEOUT);
+            return function() {
+                if (!aborted) {
+                    clearTimeout(timeout);
+                    if (typeof request !== "undefined") {
+                        request.abort();
+                    }
+                    $("#ajax_usercard").remove();
+                    aborted = true;
+                }
+            };
+        };
+        var abort;
+        $(".post .autor dt a").hover(function() {
+            var $this = $(this);
+            var offset = $this.offset();
+            abort = info_box($this.attr("href").match(/id\/(.+)/)[1], offset.left - 10, offset.top + 14);
+        }, abort);
+    });
 })(jQuery, window.UserTools);
 
+/*
+ * Cambios de nombres en foros y usuarios + cambio de CTs.
+ */
 (function($, UserTools) {
     UserTools.options.setDefault("CambiosNombre", true);
     var NICKS = {
@@ -633,51 +674,46 @@ window.UserTools.options.setDefault("salvarposts", false);
     var FOROS = {
         "Juegos móvil": "Shitphones"
     };
-    // Cambios de nombres
-    if (UserTools.options.get("CambiosNombre")) {
-        $(function() {
-            // Nicks
-            var utCambioDeNick = function(original, falso, ct) {
-                $('div.post div[class="autor"]:contains("' + original + '")').each(function() {
-                    if (typeof falso !== "undefined") {
-                        $(this).children().children("dt").children("a").text("" + falso + "");
-                    }
-                    if (typeof ct !== "undefined") {
-                        $(this).children().children("dd:first").text("" + ct + "");
-                    }
-                });
+    UserTools.options.$("CambiosNombre", function() {
+        // Usuarios
+        // TODO: Mejorable
+        var cambiar_usuario = function(original, info) {
+            var falso = info.nick;
+            var ct = info.ct;
+            $('div.post div[class="autor"]:contains("' + original + '")').each(function() {
                 if (typeof falso !== "undefined") {
-                    $(document).on("mouseover", "body", function() {
-                        $('div.lastpost cite a:contains("' + original + '")').text("" + falso + "");
-                    });
-                    $('tr div.left a[href^="/id/"]:contains("' + original + '")').each(function() {
-                        $(this).text("" + falso + "");
-                    });
+                    $(this).children().children("dt").children("a").text(falso);
                 }
-            };
-            var nick;
-            for (nick in NICKS) {
-                if (NICKS.hasOwnProperty(nick)) {
-                    var info = NICKS[nick];
-                    utCambioDeNick(nick, info.nick, info.ct);
+                if (typeof ct !== "undefined") {
+                    $(this).children().children("dd:first").text("" + ct + "");
                 }
+            });
+            if (typeof falso !== "undefined") {
+                $(document).on("mouseover", "body", function() {
+                    $('div.lastpost cite a:contains("' + original + '")').text(falso);
+                });
+                $('tr div.left a[href^="/id/"]:contains("' + original + '")').each(function() {
+                    $(this).text(falso);
+                });
             }
-            //Foros
-            var utCambioDeNombreForo = function(original, falso) {
-                $('div.fpanels div.fpanel div.info span.sub a:contains("' + original + '")').text("" + falso + "");
-                $('#topnav h1:contains("' + original + '")').text("" + falso + "");
-                $('#topnav a:contains("' + original + '")').text("" + falso + "");
-                $('#footnav a:contains("' + original + '")').text("" + falso + "");
-                $('div.fpanels div.fpanel div.info strong a:contains("' + original + '")').text("" + falso + "");
-            };
-            var nombre;
-            for (nombre in FOROS) {
-                if (FOROS.hasOwnProperty(nombre)) {
-                    utCambioDeNombreForo(nombre, FOROS[nombre]);
-                }
-            }
-        });
-    }
+        };
+        var nick;
+        for (nick in NICKS) {
+            cambiar_usuario(nick, NICKS[nick]);
+        }
+        //Foros
+        var cambiar_foro = function(original, falso) {
+            $('div.fpanels div.fpanel div.info span.sub a:contains("' + original + '")').text(falso);
+            $('#topnav h1:contains("' + original + '")').text(falso);
+            $('#topnav a:contains("' + original + '")').text(falso);
+            $('#footnav a:contains("' + original + '")').text(falso);
+            $('div.fpanels div.fpanel div.info strong a:contains("' + original + '")').text(falso);
+        };
+        var nombre;
+        for (nombre in FOROS) {
+            cambiar_foro(nombre, FOROS[nombre]);
+        }
+    });
 })(jQuery, window.UserTools);
 
 (function($, UserTools) {
@@ -784,262 +820,253 @@ window.UserTools.options.setDefault("salvarposts", false);
     }
 })(jQuery, UserTools);
 
+/*
+ * Permite ocultar filtros en el spy.
+ */
 (function($, UserTools) {
-    // Ocultar filtros en spy
-    $(function() {
-        var $utfiltrar = $("#nofids").siblings("h3");
-        var $utfiltrarP = $("#nofids").closest(".box").siblings("p");
-        $utfiltrar.addClass("ut-filtrar");
-        $($utfiltrar).click(function() {
-            $("#nofids").slideToggle();
+    UserTools.options.not$("filtrarOpcion", function() {
+        var $nofids = $("#nofids");
+        var $utfiltrar = $nofids.siblings("h3");
+        var $utfiltrarP = $nofids.closest(".box").siblings("p");
+        $utfiltrar.addClass("ut-filtrar").click(function() {
+            $nofids.slideToggle();
             $utfiltrarP.toggle();
-            if (UserTools.options.get("filtrarOpcion")) {
-                UserTools.options.set("filtrarOpcion", false);
-            } else {
-                UserTools.options.set("filtrarOpcion", true);
-            }
+            UserTools.options.toggle("filtrarOpcion");
         });
-        if (!UserTools.options.get("filtrarOpcion")) {
-            $("#nofids").toggle();
-            $utfiltrarP.toggle();
-        }
+        $nofids.toggle();
+        $utfiltrarP.toggle();
     });
 })(jQuery, window.UserTools);
 
+/*
+ * Funciones generales para spoilers.
+ *
+ * - Nuevo estilo.
+ * - Boton de cerrar el spoiler al final.
+ */
 (function($, UserTools) {
     UserTools.options.setDefault("estilospoilers", true);
     UserTools.options.setDefault("cerrarspoilers", false);
     // Estilos para los spoilers
-    if (UserTools.options.get("estilospoilers")) {
-        $(function() {
-            $(function() {
-                var spoiler_id;
-                if (UserTools.isDark == 0) {
-                    $(".spoiler").each(function() {
-                        spoiler_id = $(this).attr("rel");
-                        $("#" + spoiler_id).addClass("spoiler-content");
-                    });
-                } else {
-                    $(".spoiler").each(function() {
-                        spoiler_id = $(this).attr("rel");
-                        $("#" + spoiler_id).addClass("spoiler-content-black");
-                    });
-                }
-            });
+    // TODO: Mejorable?
+    UserTools.options.$("estilospoilers", function() {
+        $(".spoiler").each(function() {
+            var spoiler_id = $(this).attr("rel");
+            $("#" + spoiler_id).addClass(!UserTools.isDark ? "spoiler-content" : "spoiler-content-black");
         });
-    }
+    });
     // Botón para cerrar spoiler al final del mismo
-    if (UserTools.options.get("cerrarspoilers")) {
-        $(function() {
-            $('div[id^="cuerpo_"] div[id^="sp_"]').append('<br /><br /><a class="ut-cerrarspoiler-boton" style="cursor: pointer;">Cerrar Spoiler</a>');
-            $(".ut-cerrarspoiler-boton").click(function() {
-                var utSpoilerPostId = $(this).closest("div.post").attr("id");
-                var utSpoilerId = $(this).closest('div[id^="sp_"]').attr("id");
-                $(this).closest('div[id^="sp_"]').siblings('a[rel="' + utSpoilerId + '"]').removeClass("less");
-                $(this).closest('div[id^="' + utSpoilerId + '"]').hide();
-                $("#" + utSpoilerPostId).ScrollTo({
-                    duration: 0
-                });
+    // TODO: Mejorable
+    UserTools.options.$("cerrarspoilers", function() {
+        $('div[id^="cuerpo_"] div[id^="sp_"]').append('<br /><br /><a class="ut-cerrarspoiler-boton" style="cursor: pointer;">Cerrar Spoiler</a>');
+        $(".ut-cerrarspoiler-boton").click(function() {
+            var utSpoilerPostId = $(this).closest("div.post").attr("id");
+            var utSpoilerId = $(this).closest('div[id^="sp_"]').attr("id");
+            $(this).closest('div[id^="sp_"]').siblings('a[rel="' + utSpoilerId + '"]').removeClass("less");
+            $(this).closest('div[id^="' + utSpoilerId + '"]').hide();
+            $("#" + utSpoilerPostId).ScrollTo({
+                duration: 0
             });
         });
-    }
+    });
 })(jQuery, window.UserTools);
 
 (function(window, document, $, UserTools) {
     UserTools.options.setDefault("forosfavs", true);
-    if (UserTools.options.get("forosfavs")) {
-        $(function() {
-            var forosFav;
-            // Container
-            //$('<div id="foros-fav-float">').append('<div><ul id="ut-foros-fav">').insertBefore('#content_body, #content_head');
-            $('<div id="sticky-anchor" style="position: absolute; top: 200px;">').insertBefore("#content_body, #content_head");
-            $('<div id="foros-fav-float">').append('<div><ul id="ut-foros-fav">').insertAfter("#sticky-anchor");
-            // Dibujamos los foros favoritos en la lista*/
-            var forosFavUpdate = function() {
-                forosFav = UserTools.options.get("-forosFav", []);
-                var forosFavDibujo = function() {
-                    var i;
-                    for (i = 0; i < forosFav.length; i++) {
-                        $("#ut-foros-fav").append($("<li>").html('<a href="/foro/' + forosFav[i] + '"><i class="ifid fid_' + forosFav[i] + '"></i></a><div class="ut-foros-fav-borrar"><i class="sprite UT-trash"></i></div>'));
-                    }
-                };
-                forosFavDibujo();
-            };
-            forosFavUpdate();
-            // Boton para añadir a favoritos
-            $("div.fpanel div.icon").append('<div class="ut-foro-fav-add">');
-            $("div.fpanel div.icon").hover(function() {
-                $(this).children(".ut-foro-fav-add").addClass("ut-foro-fav-add-moveup");
-            }, function() {
-                $(this).children(".ut-foro-fav-add").removeClass("ut-foro-fav-add-moveup");
-            });
-            $(".ut-foro-fav-add").click(function() {
-                $(this).closest("div.icon").find("i.ifid").each(function() {
-                    var foroNumber = $(this).attr("class").match(/fid_(.*)/)[1];
-                    if ($.inArray(foroNumber, forosFav) > -1) {
-                        forosFav.splice($.inArray(foroNumber, forosFav), 1);
-                        UserTools.options.set("-forosFav", forosFav);
-                        $('#foros-fav-float a[href="/foro/' + foroNumber + '"]').closest("li").remove();
-                    } else {
-                        forosFav.push(foroNumber);
-                        UserTools.options.set("-forosFav", forosFav);
-                        $("#ut-foros-fav").append($("<li>").html('<a href="/foro/' + foroNumber + '"><i class="ifid fid_' + foroNumber + '"></i></a><div class="ut-foros-fav-borrar"><i class="sprite UT-trash"></i></div>'));
-                    }
-                });
-                $(this).toggleClass("ut-foro-fav-added");
-            });
-            // Botón para borrar
-            $(document).on("click", ".ut-foros-fav-borrar", function() {
-                $(this).siblings('a[href^="/foro"]').each(function() {
-                    var enlace = this + "";
-                    var split = enlace.split("/");
-                    var path = split.splice(1, split.length - 1);
-                    var pathIndexToGet = 3;
-                    var foroNumber = path[pathIndexToGet];
-                    forosFav.splice($.inArray(foroNumber, forosFav), 1);
-                    UserTools.options.set("-forosFav", forosFav);
-                    $(this).closest("li").remove();
-                    $("div.fpanel").find('a[href="/foro/' + foroNumber + '"]').closest("div.info").siblings("div.icon").children("div.ut-foro-fav-add").toggleClass("ut-foro-fav-added");
-                });
-            });
-            // Pone la estrella correcta
-            $("div.fpanel div.icon").each(function() {
-                $(this).siblings("div.info").find("a.hb,strong a").each(function() {
-                    var enlace = this + "";
-                    var split = enlace.split("/");
-                    var path = split.splice(1, split.length - 1);
-                    var pathIndexToGet = 3;
-                    var foroNumber = path[pathIndexToGet];
-                    if ($.inArray(foroNumber, forosFav) > -1) {
-                        $(this).closest("div.info").siblings("div.icon").children("div.ut-foro-fav-add").toggleClass("ut-foro-fav-added");
-                    }
-                });
-            });
-            // Panel flotante sigue el scroll
-            var sticky_relocate = function() {
-                var window_top = $(window).scrollTop();
-                var div_top = $("#sticky-anchor").offset().top;
-                if (window_top > div_top) $("#foros-fav-float").addClass("foros-fav-float-sticky"); else $("#foros-fav-float").removeClass("foros-fav-float-sticky");
-            };
-            $(window).scroll(sticky_relocate);
-            sticky_relocate();
-            if ($.browser.safari) {
-                $("#foros-fav-float").css("margin-left", "1145px");
-            } else if ($.browser.opera) {
-                $("#foros-fav-float").css("margin-left", "1145px");
+    UserTools.options.$("forosfavs", function() {
+        var favs;
+        var update = function() {
+            favs = UserTools.options.get("-favs", []);
+            $favs = $("#ut-foros-fav").html("");
+            var i;
+            for (i = 0; i < favs.length; i++) {
+                $favs.append($('<li><a href="/foro/' + favs[i] + '"><i class="ifid fid_' + favs[i] + '"></i></a><div class="ut-foros-fav-borrar"><i class="sprite UT-trash"></i></div></li>'));
             }
+        };
+        update();
+        // Container
+        $('<div id="sticky-anchor" style="position: absolute; top: 200px;">').insertBefore("#content_body, #content_head");
+        $('<div id="foros-fav-float">').append('<div><ul id="ut-foros-fav">').insertAfter("#sticky-anchor");
+        // Boton para añadir a favs
+        $("div.fpanel div.icon").append('<div class="ut-foro-fav-add">').hover(function() {
+            $(".ut-foro-fav-add", this).addClass("ut-foro-fav-add-moveup");
+        }, function() {
+            $(".ut-foro-fav-add", this).removeClass("ut-foro-fav-add-moveup");
         });
-    }
+        $(".ut-foro-fav-add").click(function() {
+            $this = $(this);
+            $this.closest("div.icon").find("i.ifid").each(function() {
+                var foroNumber = $this.attr("class").match(/fid_(.*)/)[1];
+                var index = $.inArray(foroNumber, favs) > -1;
+                if (index) {
+                    favs.splice(index, 1);
+                    UserTools.options.set("-favs", favs);
+                    $('#foros-fav-float a[href="/foro/' + foroNumber + '"]').closest("li").remove();
+                } else {
+                    favs.push(foroNumber);
+                    UserTools.options.set("-favs", favs);
+                    $("#ut-foros-fav").append('<li><a href="/foro/' + foroNumber + '"><i class="ifid fid_' + foroNumber + '"></i></a><div class="ut-foros-fav-borrar"><i class="sprite UT-trash"></i></div></li>');
+                }
+            });
+            $this.toggleClass("ut-foro-fav-added");
+        });
+        // Botón para borrar
+        $(document).on("click", ".ut-foros-fav-borrar", function() {
+            $this = $(this);
+            $this.siblings('a[href^="/foro"]').each(function() {
+                var enlace = this + "";
+                var split = enlace.split("/");
+                var path = split.splice(1, split.length - 1);
+                var pathIndexToGet = 3;
+                var foroNumber = path[pathIndexToGet];
+                favs.splice($.inArray(foroNumber, favs), 1);
+                UserTools.options.set("-favs", favs);
+                $this.closest("li").remove();
+                $("div.fpanel").find('a[href="/foro/' + foroNumber + '"]').closest("div.info").siblings("div.icon").children("div.ut-foro-fav-add").toggleClass("ut-foro-fav-added");
+            });
+        });
+        // Pone la estrella correcta
+        $("div.fpanel div.icon").each(function() {
+            $this = $(this);
+            $this.siblings("div.info").find("a.hb,strong a").each(function() {
+                var enlace = this + "";
+                var split = enlace.split("/");
+                var path = split.splice(1, split.length - 1);
+                var pathIndexToGet = 3;
+                var foroNumber = path[pathIndexToGet];
+                if ($.inArray(foroNumber, favs) > -1) {
+                    $this.closest("div.info").siblings("div.icon").children("div.ut-foro-fav-add").toggleClass("ut-foro-fav-added");
+                }
+            });
+        });
+        // Panel flotante sigue el scroll
+        var sticky_relocate = function() {
+            var window_top = $(window).scrollTop();
+            var div_top = $("#sticky-anchor").offset().top;
+            if (window_top > div_top) {
+                $("#foros-fav-float").addClass("foros-fav-float-sticky");
+            } else {
+                $("#foros-fav-float").removeClass("foros-fav-float-sticky");
+            }
+        };
+        $(window).scroll(sticky_relocate);
+        sticky_relocate();
+        // Fixes vendor?
+        if ($.browser.safari || $.browser.opera) {
+            $("#foros-fav-float").css("margin-left", "1145px");
+        }
+    });
 })(window, window.document, jQuery, window.UserTools);
 
+/*
+ * Links de favs/avisos/mensajes al estilo antiguo.
+ */
 (function($, UserTools) {
     UserTools.options.setDefault("antiguoslinksuserinfo", false);
-    // Antiguos links de favs/avisos/msj
-    if (UserTools.options.get("antiguoslinksuserinfo")) {
-        $(function() {
-            var utnotifylinkdesnudo = $("#nav_bar a#notifylink").closest("li").clone();
-            var utfavslinkdesnudo = $("#nav_bar a#favslink").closest("li").clone();
-            var utmplinkdesnudo = $("#nav_bar a#mplink").closest("li").clone();
-            $("#nav_bar a#notifylink").closest("li").remove();
-            $("#nav_bar a#favslink").closest("li").remove();
-            $("#nav_bar a#mplink").closest("li").remove();
-            var navbarAncla = $('#nav_bar a[href^="/id/"]').closest("li");
-            utnotifylinkdesnudo.add(utfavslinkdesnudo).add(utmplinkdesnudo).insertAfter(navbarAncla);
-        });
-    }
+    UserTools.options.$("antiguoslinksuserinfo", function() {
+        var utnotifylinkdesnudo = $("#nav_bar a#notifylink").closest("li").clone();
+        var utfavslinkdesnudo = $("#nav_bar a#favslink").closest("li").clone();
+        var utmplinkdesnudo = $("#nav_bar a#mplink").closest("li").clone();
+        $("#nav_bar a#notifylink").closest("li").remove();
+        $("#nav_bar a#favslink").closest("li").remove();
+        $("#nav_bar a#mplink").closest("li").remove();
+        var navbarAncla = $('#nav_bar a[href^="/id/"]').closest("li");
+        utnotifylinkdesnudo.add(utfavslinkdesnudo).add(utmplinkdesnudo).insertAfter(navbarAncla);
+    });
 })(jQuery, window.UserTools);
 
+/*
+ * Hilos con live destacados (sólo funciona con theme normal).
+ */
 (function($, UserTools) {
     UserTools.options.setDefault("livesdestacados", true);
-    // hilos con live destacados (solo funciona con theme normal)
-    if (UserTools.options.get("livesdestacados")) {
-        $(document).on("mouseover", "body", function() {
-            $('img[alt="live"]').closest("tr").addClass("ut-live");
-        });
-    }
+    UserTools.options.$("livesdestacados", function() {
+        $('img[alt="live"]').closest("tr").addClass("ut-live");
+    });
 })(jQuery, window.UserTools);
 
+/*
+ * Sistema de tagging de usuarios.
+ */
 (function($, UserTools) {
     UserTools.options.setDefault("TagsOpcion", true);
-    if (UserTools.options.get("TagsOpcion")) {
-        $(function() {
-            // Dibuja tags en el hilo
-            var utTags = UserTools.options.get("-Tags", {});
-            $(":not(form)> div.post > div.autor > dl > dt > a").each(function() {
-                var nick = $(this).text();
-                if (typeof utTags[nick] !== "undefined") {
-                    // dibuja con datos
-                    $(this).closest(".autor").append('<div class="ut_tag" style="background-color: ' + utTags[nick].color + '">' + utTags[nick].tag + '</div><div class="ut_tag_info" style="display:none;"><div class="ut_tag_info_cerrar">x</div><form class="ut_tag_form">&gt; Tag<br><input class="ut_tag_tag" value="' + utTags[nick].tag + '" maxlength="25"><br />&gt; Color<div class="ut_tag_colores" style="display: inline;"><div class="ut_tag_colores_1"></div><div class="ut_tag_colores_2"></div><div class="ut_tag_colores_3"></div><div class="ut_tag_colores_4"></div><div class="ut_tag_colores_5"></div><div class="ut_tag_colores_6"></div></div><br><input class="ut_tag_color" value="' + utTags[nick].color + '" maxlength="26"><br />&gt; <span class="ut_tag_link_span"><a href="' + utTags[nick].link + '" target="_blank">Link</a></span><br><input class="ut_tag_link" value="' + utTags[nick].link + '"><br />&gt; Descripción<br><textarea class="ut_tag_desc" style="width: 110px;">' + utTags[nick].desc + '</textarea><br /><input type="submit" style="margin-top: 1px;" value="Guardar"></form></div>');
-                    if (utTags[nick].link === "") {
-                        // quita el link si no tiene enlace
-                        $(this).closest(".autor").children(".ut_tag_info").children(".ut_tag_form").children(".ut_tag_link_span").replaceWith('<span class="ut_tag_link_span">Link</span>');
-                    }
-                } else {
-                    // dibuja sin datos
-                    $(this).closest(".autor").append('<div class="ut_tag ut_tag_vacia" style="background-color: #aaaaaa; opacity: 0.25; width: 9px; height: 15px; overflow: hidden;">+ etiqueta</div><div class="ut_tag_info" style="display:none;"><div class="ut_tag_info_cerrar">x</div><form class="ut_tag_form">&gt; Tag<br><input class="ut_tag_tag" placeholder="Tag" maxlength="25"><br />&gt; Color<div class="ut_tag_colores" style="display: inline;"><div class="ut_tag_colores_1"></div><div class="ut_tag_colores_2"></div><div class="ut_tag_colores_3"></div><div class="ut_tag_colores_4"></div><div class="ut_tag_colores_5"></div><div class="ut_tag_colores_6"></div></div><br><input class="ut_tag_color" placeholder="#5eadb9" maxlength="26"><br />&gt; <span class="ut_tag_link_span">Link</span><br><input class="ut_tag_link" placeholder="http://"><br />&gt; Descripción<br><textarea placeholder="Descripción" class="ut_tag_desc" style="width: 110px;"></textarea><br /><input type="submit" style="margin-top: 1px;" value="Guardar"></form></div>');
+    UserTools.options.$("TagsOpcion", function() {
+        var tags = UserTools.options.get("-Tags", {});
+        // Dibuja tags en el hilo
+        $(":not(form)> div.post > div.autor > dl > dt > a").each(function() {
+            var $this = $(this);
+            var nick = $this.text();
+            // dibuja con datos
+            if (typeof tags[nick] !== "undefined") {
+                $this.closest(".autor").append('<div class="ut_tag" style="background-color: ' + tags[nick].color + '">' + tags[nick].tag + '</div><div class="ut_tag_info" style="display:none;"><div class="ut_tag_info_cerrar">x</div><form class="ut_tag_form">&gt; Tag<br><input class="ut_tag_tag" value="' + tags[nick].tag + '" maxlength="25"><br />&gt; Color<div class="ut_tag_colores" style="display: inline;"><div class="ut_tag_colores_1"></div><div class="ut_tag_colores_2"></div><div class="ut_tag_colores_3"></div><div class="ut_tag_colores_4"></div><div class="ut_tag_colores_5"></div><div class="ut_tag_colores_6"></div></div><br><input class="ut_tag_color" value="' + tags[nick].color + '" maxlength="26"><br />&gt; <span class="ut_tag_link_span"><a href="' + tags[nick].link + '" target="_blank">Link</a></span><br><input class="ut_tag_link" value="' + tags[nick].link + '"><br />&gt; Descripción<br><textarea class="ut_tag_desc" style="width: 110px;">' + tags[nick].desc + '</textarea><br /><input type="submit" style="margin-top: 1px;" value="Guardar"></form></div>');
+                if (tags[nick].link === "") {
+                    // quita el link si no tiene enlace
+                    $this.closest(".autor").children(".ut_tag_info").children(".ut_tag_form").children(".ut_tag_link_span").replaceWith('<span class="ut_tag_link_span">Link</span>');
                 }
-                $(this).closest(".autor").children(".ut_tag_info").on("submit", "form.ut_tag_form", function() {
-                    // guardamos datos del tag
-                    var $tag = $(this).children(".ut_tag_tag");
-                    var $color = $(this).children(".ut_tag_color");
-                    var $link = $(this).children(".ut_tag_link");
-                    var $desc = $(this).children(".ut_tag_desc");
-                    var tag = $tag.val();
-                    var color = $color.val();
-                    if (color === "") {
-                        // si no se rellena el color, mete uno default
-                        var color = "#1392ED";
-                    }
-                    var link = $link.val();
-                    var desc = $desc.val();
-                    utTags["" + nick + ""] = {
-                        tag: "" + tag + "",
-                        color: "" + color + "",
-                        link: "" + link + "",
-                        desc: "" + desc + ""
-                    };
-                    if (utTags["" + nick + ""].tag !== "") {
-                        // si el tag esta relleno mete y actualiza
-                        $(':not(form)> div.post > div.autor > dl > dt > a:contains("' + nick + '")').each(function() {
-                            $(this).closest(".autor").children(".ut_tag").replaceWith('<div class="ut_tag" style="background-color: ' + utTags[nick].color + '">' + utTags[nick].tag + "</div>");
-                            $(this).closest(".autor").children(".ut_tag_info").children(".ut_tag_form").children(".ut_tag_tag").attr("value", "" + utTags[nick].tag + "");
-                            $(this).closest(".autor").children(".ut_tag_info").children(".ut_tag_form").children(".ut_tag_color").attr("value", "" + utTags[nick].color + "");
-                            $(this).closest(".autor").children(".ut_tag_info").children(".ut_tag_form").children(".ut_tag_link").attr("value", "" + utTags[nick].link + "");
-                            $(this).closest(".autor").children(".ut_tag_info").children(".ut_tag_form").children(".ut_tag_link_span").replaceWith('<span class="ut_tag_link_span"><a href="' + utTags[nick].link + '" target="_blank">Link</a></span>');
-                            $(this).closest(".autor").children(".ut_tag_info").children(".ut_tag_form").children(".ut_tag_desc").text("" + utTags[nick].desc + "");
-                            if (utTags[nick].link === "") {
-                                // quita el link si no tiene enlace
-                                $(this).closest(".autor").children(".ut_tag_info").children(".ut_tag_form").children(".ut_tag_link_span").replaceWith('<span class="ut_tag_link_span">Link</span>');
-                            }
-                            $(this).closest("div.autor").children(".ut_tag_info").hide();
-                        });
-                    } else {
-                        // si el tag esta vacio borra key y deja default
-                        $(':not(form)> div.post > div.autor > dl > dt > a:contains("' + nick + '")').each(function() {
-                            delete utTags["" + nick + ""];
-                            $(this).closest(".autor").children(".ut_tag").replaceWith('<div class="ut_tag ut_tag_vacia" style="background-color: #aaaaaa; opacity: 0.25; width: 9px; height: 15px; overflow: hidden;">+ etiqueta</div>');
-                            $(this).closest(".autor").children(".ut_tag_info").children(".ut_tag_form").replaceWith('<form class="ut_tag_form">&gt; Tag<br><input class="ut_tag_tag" placeholder="Tag" maxlength="25"><br />&gt; Color<div class="ut_tag_colores" style="display: inline;"><div class="ut_tag_colores_1"></div><div class="ut_tag_colores_2"></div><div class="ut_tag_colores_3"></div><div class="ut_tag_colores_4"></div><div class="ut_tag_colores_5"></div><div class="ut_tag_colores_6"></div></div><br><input class="ut_tag_color" placeholder="#5eadb9" maxlength="26"><br />&gt; <span class="ut_tag_link_span">Link</span><br><input class="ut_tag_link" placeholder="http://"><br />&gt; Descripción<br><textarea placeholder="Descripción" class="ut_tag_desc" style="width: 110px;"></textarea><br /><input type="submit" style="margin-top: 1px;" value="Guardar"></form>');
-                            $(this).closest("div.autor").children(".ut_tag_info").hide();
-                        });
-                    }
-                    UserTools.options.set("-Tags", utTags);
-                    return false;
-                });
-            });
-            // Funciones de los botones
-            $(".autor").each(function() {
-                $(this).on("click", ".ut_tag, .ut_tag_info_cerrar", function() {
-                    $(this).closest("div.autor").children(".ut_tag_info").toggle();
-                });
-            });
-            $(".autor").each(function() {
-                $(this).on("click", ".ut_tag_colores_1, .ut_tag_colores_2, .ut_tag_colores_3, .ut_tag_colores_4 , .ut_tag_colores_5, .ut_tag_colores_6 ", function() {
-                    var color = $(this).css("background-color");
-                    $(this).closest("div.ut_tag_colores").siblings(".ut_tag_color").attr("value", "" + color + "");
-                });
+            } else {
+                $this.closest(".autor").append('<div class="ut_tag ut_tag_vacia" style="background-color: #aaaaaa; opacity: 0.25; width: 9px; height: 15px; overflow: hidden;">+ etiqueta</div><div class="ut_tag_info" style="display:none;"><div class="ut_tag_info_cerrar">x</div><form class="ut_tag_form">&gt; Tag<br><input class="ut_tag_tag" placeholder="Tag" maxlength="25"><br />&gt; Color<div class="ut_tag_colores" style="display: inline;"><div class="ut_tag_colores_1"></div><div class="ut_tag_colores_2"></div><div class="ut_tag_colores_3"></div><div class="ut_tag_colores_4"></div><div class="ut_tag_colores_5"></div><div class="ut_tag_colores_6"></div></div><br><input class="ut_tag_color" placeholder="#5eadb9" maxlength="26"><br />&gt; <span class="ut_tag_link_span">Link</span><br><input class="ut_tag_link" placeholder="http://"><br />&gt; Descripción<br><textarea placeholder="Descripción" class="ut_tag_desc" style="width: 110px;"></textarea><br /><input type="submit" style="margin-top: 1px;" value="Guardar"></form></div>');
+            }
+            $this.closest(".autor").children(".ut_tag_info").on("submit", "form.ut_tag_form", function() {
+                // guardamos datos del tag
+                var $this = $(this);
+                var $tag = $this.children(".ut_tag_tag");
+                var $color = $this.children(".ut_tag_color");
+                var $link = $this.children(".ut_tag_link");
+                var $desc = $this.children(".ut_tag_desc");
+                var tag = $tag.val();
+                var color = $color.val();
+                if (color === "") {
+                    // si no se rellena el color, mete uno default
+                    var color = "#1392ED";
+                }
+                var link = $link.val();
+                var desc = $desc.val();
+                tags[nick] = {
+                    tag: tag,
+                    color: color,
+                    link: link,
+                    desc: desc
+                };
+                // si el tag esta relleno mete y actualiza
+                if (tags[nick].tag !== "") {
+                    $(':not(form)> div.post > div.autor > dl > dt > a:contains("' + nick + '")').each(function() {
+                        $this.closest(".autor").children(".ut_tag").replaceWith('<div class="ut_tag" style="background-color: ' + tags[nick].color + '">' + tags[nick].tag + "</div>");
+                        var $tag_form = $this.closest(".autor").children(".ut_tag_info").children(".ut_tag_form");
+                        $tag_form.children(".ut_tag_tag").attr("value", tags[nick].tag);
+                        $tag_form.children(".ut_tag_color").attr("value", tags[nick].color);
+                        $tag_form.children(".ut_tag_link").attr("value", tags[nick].link);
+                        $tag_form.children(".ut_tag_link_span").replaceWith('<span class="ut_tag_link_span"><a href="' + tags[nick].link + '" target="_blank">Link</a></span>');
+                        $tag_form.children(".ut_tag_desc").text("" + tags[nick].desc + "");
+                        // quita el link si no tiene enlace
+                        if (tags[nick].link === "") {
+                            $tag_form.children(".ut_tag_link_span").replaceWith('<span class="ut_tag_link_span">Link</span>');
+                        }
+                        $this.closest("div.autor").children(".ut_tag_info").hide();
+                    });
+                } else {
+                    $(':not(form)> div.post > div.autor > dl > dt > a:contains("' + nick + '")').each(function() {
+                        delete tags[nick];
+                        $this.closest(".autor").children(".ut_tag").replaceWith('<div class="ut_tag ut_tag_vacia" style="background-color: #aaaaaa; opacity: 0.25; width: 9px; height: 15px; overflow: hidden;">+ etiqueta</div>');
+                        $this.closest(".autor").children(".ut_tag_info").children(".ut_tag_form").replaceWith('<form class="ut_tag_form">&gt; Tag<br><input class="ut_tag_tag" placeholder="Tag" maxlength="25"><br />&gt; Color<div class="ut_tag_colores" style="display: inline;"><div class="ut_tag_colores_1"></div><div class="ut_tag_colores_2"></div><div class="ut_tag_colores_3"></div><div class="ut_tag_colores_4"></div><div class="ut_tag_colores_5"></div><div class="ut_tag_colores_6"></div></div><br><input class="ut_tag_color" placeholder="#5eadb9" maxlength="26"><br />&gt; <span class="ut_tag_link_span">Link</span><br><input class="ut_tag_link" placeholder="http://"><br />&gt; Descripción<br><textarea placeholder="Descripción" class="ut_tag_desc" style="width: 110px;"></textarea><br /><input type="submit" style="margin-top: 1px;" value="Guardar"></form>');
+                        $this.closest("div.autor").children(".ut_tag_info").hide();
+                    });
+                }
+                UserTools.options.set("-Tags", tags);
+                return false;
             });
         });
-    }
+        // Funciones de los botones
+        $(".autor").each(function() {
+            var $this = $(this);
+            $this.on("click", ".ut_tag, .ut_tag_info_cerrar", function() {
+                $this.closest("div.autor").children(".ut_tag_info").toggle();
+            });
+            $this.on("click", ".ut_tag_colores_1, .ut_tag_colores_2, .ut_tag_colores_3, .ut_tag_colores_4 , .ut_tag_colores_5, .ut_tag_colores_6 ", function() {
+                var color = $this.css("background-color");
+                $this.closest("div.ut_tag_colores").siblings(".ut_tag_color").attr("value", "" + color + "");
+            });
+        });
+    });
 })(jQuery, window.UserTools);
 
 (function($, UserTools) {
@@ -1346,10 +1373,13 @@ window.UserTools.options.setDefault("salvarposts", false);
     });
 })(jQuery, window.UserTools);
 
+/*
+ * Sistema de macros.
+ */
 (function($, UserTools) {
-    // Vars
     var macros = UserTools.options.get("macros", {});
     // Functions
+    // TODO: mejorable
     var updateMacros = function(store, $container) {
         var macros = {};
         $container.children().each(function() {
@@ -1370,15 +1400,14 @@ window.UserTools.options.setDefault("salvarposts", false);
                 var $spanmacro = $('<div class="ut-macrotxt"' + (UserTools.isDark ? " style='color: #EEEEEE !important;'" : "") + ">").text(store[title]);
                 var $title = $("<a>").html(' <a style="cursor:pointer;" title="Borrar macro" class="ut-remove-macro"><i class="sprite UT-trash-orange"></i></a>').prepend($spantitle).append($spanmacro);
                 // solo +title+ para la lista de titulos
-                var $item = $('<li class="ut-titleymacro">').data("macro", title).append($title).hide();
-                $container.append($item);
-                $item.slideDown("slow");
+                $('<li class="ut-titleymacro">').data("macro", title).append($title).hide().appendTo($item).slideDown("slow");
             }
         }
     };
-    var updateMacrosButton = function(store, $container2) {
+    // TODO: mejorable
+    var updateMacrosButton = function(store, $container) {
         var macros = {};
-        $container2.children().each(function() {
+        $container.children().each(function() {
             var $macro = $(this);
             var title = $macro.data("macro");
             if (!(title in store)) {
@@ -1394,9 +1423,7 @@ window.UserTools.options.setDefault("salvarposts", false);
             if (!(title in macros)) {
                 var $spantitle = $('<span class="ut-titletxt-list">').text(title);
                 var $title = $("<div>").html(" ").prepend($spantitle);
-                var $item = $('<li class="ut-titleymacro-list">').data("macro", title).append($title).hide();
-                $container2.append($item);
-                $item.slideDown("slow");
+                $('<li class="ut-titleymacro-list">').data("macro", title).append($title).hide().appendTo($container).slideDown("slow");
             }
         }
     };
@@ -1404,18 +1431,19 @@ window.UserTools.options.setDefault("salvarposts", false);
     $(function() {
         var $macros = $("#ut-macros");
         var $macrosbutton = $("#ut-button-macros-list ul");
+        var $macroslist = $("#ut-button-macros-list");
+        var $title = $("#ut-title");
+        var $macro_text = $("#ut-macro");
         updateMacros(macros, $macros);
         updateMacrosButton(macros, $macrosbutton);
         $("#ut-macros-form").submit(function() {
-            var $title = $("#ut-title");
-            var $macro = $("#ut-macro");
             var title = $title.val();
-            var macro = $macro.val();
-            if (title !== "" && macro !== "") {
-                macros[title] = macro;
+            var text = $macro_text.val();
+            if (title !== "" && text !== "") {
+                macros[title] = text;
                 UserTools.options.set("macros", macros);
                 $title.val("");
-                $macro.val("");
+                $macro_text.val("");
                 updateMacros(macros, $macros);
                 updateMacrosButton(macros, $macrosbutton);
             }
@@ -1428,13 +1456,14 @@ window.UserTools.options.setDefault("salvarposts", false);
             updateMacros(macros, $macrosbutton);
             return false;
         });
+        $cuerpo = $("textarea#cuerpo");
         $macrosbutton.on("click", "li", function() {
-            $("textarea#cuerpo").insertAtCaretPos(macros[$(this).data("macro")]);
-            $("#ut-button-macros-list").hide();
+            $cuerpo.insertAtCaretPos(macros[$(this).data("macro")]);
+            $macroslist.hide();
             return false;
         });
-        if ($("#goext").length > 0 || UserTools.live === true) {
-            $("#ut-button-macros-list").addClass("ut-button-macros-list-barrendera");
+        if ($("#goext").length > 0 || UserTools.live) {
+            $macroslist.addClass("ut-button-macros-list-barrendera");
         }
     });
 })(jQuery, window.UserTools);

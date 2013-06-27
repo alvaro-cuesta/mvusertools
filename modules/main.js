@@ -40,11 +40,9 @@ window.UserTools = {
 
             if (valor !== null && typeof valor !== 'undefined' && valor !== 'undefined') {
 		return JSON.decode(valor);
-            } else if (defecto !== null && typeof defecto !== 'undefined') {
-		defecto = JSON.encode(defecto);
-		localStorage.setItem(opcion, defecto);
-		return defecto;
             }
+
+	    return defecto;
 	},
 	set: function(opcion, valor) {
 	    opcion = 'ut' + opcion;
@@ -56,6 +54,23 @@ window.UserTools = {
             if (localStorage.getItem(opcion) === null) {
 		localStorage.setItem(opcion, JSON.encode(defecto));
             }
+	},
+	toggle: function(opcion) {
+            window.UserTools.set(opcion, !window.UserTools.get(opcion));
+	},
+	$: function(option, callback) {
+	    if (UserTools.options.get(option)) {
+		$(function () {
+		    callback();
+		})
+	    }
+        },
+	not$: function(option, callback) {
+	    if (!UserTools.options.get(option)) {
+		$(function () {
+		    callback();
+		})
+	    }
 	}
     }
 };

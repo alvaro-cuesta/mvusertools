@@ -1,11 +1,16 @@
+/*
+ * Sistema de macros.
+ */
+
 (function ($, UserTools) {
 
-    // Vars
     var macros = UserTools.options.get('macros', {});
 
     // Functions
+    // TODO: mejorable
     var updateMacros = function (store, $container) {
         var macros = {};
+
         $container.children().each(function () {
             var $macro = $(this);
             var title = $macro.data('macro');
@@ -23,20 +28,25 @@
             if (!(title in macros)) {
                 var $spantitle = $('<span class="ut-titletxt">').text(title);
                 var $spanmacro = $('<div class="ut-macrotxt"' + (UserTools.isDark ? " style='color: #EEEEEE !important;'" : "") + '>').text(store[title]);
-                var $title = $('<a>').html(' <a style="cursor:pointer;" title="Borrar macro" class="ut-remove-macro"><i class="sprite UT-trash-orange"></i></a>').prepend($spantitle).append($spanmacro); // solo +title+ para la lista de titulos
-                var $item = $('<li class="ut-titleymacro">')
+                var $title = $('<a>')
+		    .html(' <a style="cursor:pointer;" title="Borrar macro" class="ut-remove-macro"><i class="sprite UT-trash-orange"></i></a>')
+		    .prepend($spantitle)
+		    .append($spanmacro); // solo +title+ para la lista de titulos
+                $('<li class="ut-titleymacro">')
                     .data('macro', title)
                     .append($title)
-                    .hide();
-                $container.append($item);
-                $item.slideDown('slow');
+                    .hide()
+		    .appendTo($item)
+		    .slideDown('slow');
             }
         }
     };
 
-    var updateMacrosButton = function (store, $container2) {
+    // TODO: mejorable
+    var updateMacrosButton = function (store, $container) {
         var macros = {};
-        $container2.children().each(function () {
+
+        $container.children().each(function () {
             var $macro = $(this);
             var title = $macro.data('macro');
             if (!(title in store)) {
@@ -53,12 +63,12 @@
             if (!(title in macros)) {
                 var $spantitle = $('<span class="ut-titletxt-list">').text(title);
                 var $title = $('<div>').html(' ').prepend($spantitle);
-                var $item = $('<li class="ut-titleymacro-list">')
+                $('<li class="ut-titleymacro-list">')
                     .data('macro', title)
                     .append($title)
-                    .hide();
-                $container2.append($item);
-                $item.slideDown('slow');
+                    .hide()
+		    .appendTo($container)
+		    .slideDown('slow');
             }
         }
     };
@@ -68,21 +78,22 @@
 
         var $macros = $('#ut-macros');
         var $macrosbutton = $('#ut-button-macros-list ul');
+	var $macroslist = $('#ut-button-macros-list');
+        var $title = $("#ut-title");
+        var $macro_text = $("#ut-macro");
 
         updateMacros(macros, $macros);
         updateMacrosButton(macros, $macrosbutton);
 
         $("#ut-macros-form").submit(function () {
-            var $title = $("#ut-title");
-            var $macro = $("#ut-macro");
             var title = $title.val();
-            var macro = $macro.val();
+            var text = $macro_text.val();
 
-            if (title !== "" && macro !== "") {
-                macros[title] = macro;
+            if (title !== "" && text !== "") {
+                macros[title] = text;
                 UserTools.options.set('macros', macros);
                 $title.val('');
-                $macro.val('');
+                $macro_text.val('');
                 updateMacros(macros, $macros);
                 updateMacrosButton(macros, $macrosbutton);
             }
@@ -99,14 +110,15 @@
             return false;
         });
 
+	$cuerpo = $('textarea#cuerpo');
         $macrosbutton.on('click', 'li', function () {
-            $('textarea#cuerpo').insertAtCaretPos(macros[$(this).data('macro')]);
-            $('#ut-button-macros-list').hide();
+            $cuerpo.insertAtCaretPos(macros[$(this).data('macro')]);
+            $macroslist.hide();
             return false;
         });
 
-        if ($('#goext').length > 0 || UserTools.live === true) {
-            $('#ut-button-macros-list').addClass('ut-button-macros-list-barrendera');
+        if ($('#goext').length > 0 || UserTools.live) {
+            $macroslist.addClass('ut-button-macros-list-barrendera');
         }
     });
 

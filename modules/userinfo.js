@@ -1,75 +1,77 @@
+/*
+ * Infomración del perfil en la lista de users.
+ */
+
 (function ($, UserTools) {
+    var TIMEOUT = 1000;
 
     UserTools.options.setDefault('userinfo', true);
 
-    // Información del perfil en la lista de users
-    if (UserTools.options.get('userinfo')) {
+    UserTools.options.$('userinfo', function () {
+	var info_box = function(id, left, top) {
+	    var aborted = false;
+	    var request;
 
-	$(function () {
+	    var timeout = setTimeout(function () {
+		request = $.get('http://www.mediavida.com/id/' + id, function (data) {
+		    $('#ajax_usercard').remove();
+		    var $usercard = $('<div id="ajax_usercard">' +
+				      $('.infoavatar', data).html() +
+				      '</div>');
+		    $('body').append($usercard);
 
-	    var pendingInfoBox = undefined;
-	    var infoBoxX = undefined;
-	    var infoBoxY = undefined;
-
-	    function checkUserInfoBox() {
-                if (pendingInfoBox !== undefined) {
-		    launchUserInfoBox(pendingInfoBox);
-                }
-	    }
-
-	    function launchUserInfoBox() {
-                $.get('http://www.mediavida.com/id/' + pendingInfoBox, function (data) {
-		    $('.infoavatar', data).each(function () {
-                        if (pendingInfoBox == undefined) return false;
-                        $('#ajax_usercard').remove();
-                        $('body').append('<div id="ajax_usercard">' + $(this).html() + '</div>');
-                        var box = $('#ajax_usercard');
-                        if (UserTools.isDark == 0) {
-			    box.css('background-Color', 'whitesmoke');
-                        } else {
-			    box.css('background-color', '#39444B');
-                        }
-                        box.css('borderRadius', '6px');
-                        box.css('padding', '10px 5px 5px 5px');
-                        box.css('position', 'absolute');
-                        box.css('left', infoBoxX);
-                        box.css('top', infoBoxY);
-                        box.css('overflow', 'hidden');
-                        box.css('boxShadow', '1px 1px 5px rgba(0, 0, 0, 0.25)');
-                        box.css('zIndex', '9999');
-
-                        var uavatar = $('.useravatar', box);
-                        uavatar.css('float', 'left');
-                        uavatar.css('padding', '5px');
-                        uavatar.css('marginRight', '5px');
-
-                        var uinfo = $('.userinfo', box);
-                        uinfo.css('borderRadius', '6px');
-                        uinfo.css('width', '254px');
-                        uinfo.css('height', '90px');
-                        uinfo.css('backgroundColor', '#F4F6F1');
-                        uinfo.css('float', 'left');
-                        uinfo.css('padding', '5px');
-                        uinfo.css('position', 'relative');
-                        uinfo.css('zoom', '1');
-
+		    $usercard.css({
+			'background-color': (UserTools.isDark ? 'whitesmoke' : '#39444B'),
+			'borderRadius': '6px',
+                        'padding': '10px 5px 5px 5px',
+                        'position': 'absolute',
+                        'left': x,
+                        'top': y,
+                        'overflow': 'hidden',
+                        '$usercardShadow': '1px 1px 5px rgba(0, 0, 0, 0.25)',
+                        'zIndex': '9999'
 		    });
-                });
-	    }
+		    $('.useravatar', $usercard).css({
+			'float': 'left',
+			'padding': '5px',
+			'marginRight': '5px'
+		    });
+		    $('.userinfo', $usercard).css({
+                        'borderRadius': '6px',
+                        'width': '254px',
+                        'height': '90px',
+                        'backgroundColor': '#F4F6F1',
+                        'float': 'left',
+                        'padding': '5px',
+                        'position': 'relative',
+                        'zoom': '1'
+		    });
+		});
+	    }, TIMEOUT);
 
-	    $('.post .autor dt a').hover(function () {
-                var offset = $(this).offset();
-                var pendingInfoBoxOld = $(this).attr('href');
-                pendingInfoBox = pendingInfoBoxOld.match(/id\/(.+)/)[1];
-                infoBoxX = offset.left - 10;
-                infoBoxY = offset.top + 14;
-                setTimeout(checkUserInfoBox, 1000);
-	    }, function () {
-                pendingInfoBox = undefined;
-                $('#ajax_usercard').remove();
-	    });
+	    return function () {
+		if (!aborted) {
+		    clearTimeout(timeout);
+		    if (typeof request !== 'undefined') {
+			request.abort();
+		    }
+		    $('#ajax_usercard').remove();
+		    aborted = true;
+		}
+	    };
+	};
 
-	});
-    }
+	var abort;
+	$('.post .autor dt a').hover(function () {
+	    var $this = $(this);
+	    var offset = $this.offset();
 
+            abort = info_box(
+		$this.attr('href').match(/id\/(.+)/)[1],
+		offset.left - 10,
+		offset.top + 14
+	    );
+	}, abort);
+
+    });
 })(jQuery, window.UserTools);
