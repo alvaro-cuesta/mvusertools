@@ -2,8 +2,8 @@
  * Permite ocultar filtros en el spy.
  */
 
-(function ($, UserTools) {
-    UserTools.options.not$('filtrarOpcion', function() {
+(function ($, UT) {
+    UT.options.not$('filtrarOpcion', function() {
 	var $nofids = $('#nofids');
 	var $utfiltrar = $nofids.siblings('h3');
 	var $utfiltrarP = $nofids.closest('.box').siblings('p');
@@ -13,7 +13,7 @@
 	    .click(function () {
 		$nofids.slideToggle();
 		$utfiltrarP.toggle();
-		UserTools.options.toggle('filtrarOpcion');
+		UT.options.toggle('filtrarOpcion');
 	    });
 
         $nofids.toggle();

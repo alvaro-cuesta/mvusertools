@@ -3,10 +3,10 @@
  */
 
 
-(function ($, UserTools) {
-    UserTools.options.setDefault('livesdestacados', true);
+(function ($, UT) {
+    UT.options.setDefault('livesdestacados', true);
 
-    UserTools.options.$('livesdestacados', function () {
+    UT.options.$('livesdestacados', function () {
         $('img[alt="live"]').closest('tr').addClass('ut-live');
     });
 

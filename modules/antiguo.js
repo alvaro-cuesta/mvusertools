@@ -2,22 +2,25 @@
  * Links de favs/avisos/mensajes al estilo antiguo.
  */
 
-(function ($, UserTools) {
-    UserTools.options.setDefault('antiguoslinksuserinfo', false);
+(function ($, UT) {
+    UT.options.setDefault('antiguoslinksuserinfo', false);
 
-    UserTools.options.$('antiguoslinksuserinfo', function () {
-        var utnotifylinkdesnudo = $('#nav_bar a#notifylink').closest('li').clone();
-        var utfavslinkdesnudo = $('#nav_bar a#favslink').closest('li').clone();
-        var utmplinkdesnudo = $('#nav_bar a#mplink').closest('li').clone();
+    UT.options.$('antiguoslinksuserinfo', function () {
+        var $notify = $('#nav_bar a#notifylink');
+        var $favs = $('#nav_bar a#favslink');
+        var $mps = $('#nav_bar a#mplink');
 
-        $('#nav_bar a#notifylink').closest('li').remove();
-        $('#nav_bar a#favslink').closest('li').remove();
-        $('#nav_bar a#mplink').closest('li').remove();
+        var $new_notify = $notify.closest('li').clone();
+        var $new_favs = $favs.closest('li').clone();
+        var $new_mps = $mps.closest('li').clone();
 
-        var navbarAncla = $('#nav_bar a[href^="/id/"]').closest('li');
-        utnotifylinkdesnudo
-	    .add(utfavslinkdesnudo)
-	    .add(utmplinkdesnudo)
-	    .insertAfter(navbarAncla);
+        $notify.closest('li').remove();
+        $favs.closest('li').remove();
+        $mps.closest('li').remove();
+
+        var $all = $new_notify.add($new_favs).add($new_mps);
+        $('#nav_bar a[href^="/id/"]')
+            .closest('li')
+            .after($all);
     });
 })(jQuery, window.UserTools);

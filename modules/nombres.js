@@ -2,9 +2,9 @@
  * Cambios de nombres en foros y usuarios + cambio de CTs.
  */
 
-(function($, UserTools) {
+(function($, UT) {
 
-    UserTools.options.setDefault('CambiosNombre', true);
+    UT.options.setDefault('CambiosNombre', true);
 
     var NICKS = {
 	'Alien_crrpt': {nick: 'Alien_derp'},
@@ -24,7 +24,7 @@
 	'Juegos móvil': 'Shitphones'
     };
 
-    UserTools.options.$('CambiosNombre', function () {
+    UT.options.$('CambiosNombre', function () {
 	// Usuarios
 	// TODO: Mejorable
 	var cambiar_usuario = function (original, info) {

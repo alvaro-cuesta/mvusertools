@@ -2,11 +2,38 @@
  * Sistema de tagging de usuarios.
  */
 
-(function ($, UserTools) {
-    UserTools.options.setDefault('TagsOpcion', true);
+(function ($, UT) {
+    var DEFAULT_TAG =
+'<div class="ut_tag ut_tag_vacia" style="background-color: #aaaaaa; opacity: 0.25; width: 9px; height: 15px; overflow: hidden;"> \
+  + etiqueta \
+</div> \
+<div class="ut_tag_info" style="display:none;"> \
+  <div class="ut_tag_info_cerrar">x</div> \
+  <form class="ut_tag_form"> \
+    &gt; Tag<br> \
+    <input class="ut_tag_tag" placeholder="Tag" maxlength="25"> <br /> \
+    &gt; Color \
+    <div class="ut_tag_colores" style="display: inline;"> \
+      <div class="ut_tag_colores_1"></div> \
+      <div class="ut_tag_colores_2"></div> \
+      <div class="ut_tag_colores_3"></div> \
+      <div class="ut_tag_colores_4"></div> \
+      <div class="ut_tag_colores_5"></div> \
+      <div class="ut_tag_colores_6"></div> \
+   </div> <br> \
+   <input class="ut_tag_color" placeholder="#5eadb9" maxlength="26"> <br /> \
+   &gt; <span class="ut_tag_link_span">Link</span> <br> \
+   <input class="ut_tag_link" placeholder="http://"> <br /> \
+   &gt; Descripción<br> \
+   <textarea placeholder="Descripción" class="ut_tag_desc" style="width: 110px;"></textarea> <br /> \
+   <input type="submit" style="margin-top: 1px;" value="Guardar"> \
+  </form> \
+</div>';
 
-    UserTools.options.$('TagsOpcion', function() {
-	var tags = UserTools.options.get('-Tags', {});
+    UT.options.setDefault('TagsOpcion', true);
+
+    UT.options.$('TagsOpcion', function() {
+	var tags = UT.options.get('-Tags', {});
 
 	// Dibuja tags en el hilo
 	$(':not(form)> div.post > div.autor > dl > dt > a').each(function () {
@@ -14,10 +41,11 @@
 	    var nick = $this.text();
 
 	    // dibuja con datos
-	    if (typeof tags[nick] !== "undefined") {
+	    if (typeof tags[nick] !== 'undefined') {
 		$this
 		    .closest('.autor')
-		    .append('<div class="ut_tag" style="background-color: ' + tags[nick].color+'">' + tags[nick].tag + '</div><div class="ut_tag_info" style="display:none;"><div class="ut_tag_info_cerrar">x</div><form class="ut_tag_form">&gt; Tag<br><input class="ut_tag_tag" value="'+tags[nick].tag+'" maxlength="25"><br />&gt; Color<div class="ut_tag_colores" style="display: inline;"><div class="ut_tag_colores_1"></div><div class="ut_tag_colores_2"></div><div class="ut_tag_colores_3"></div><div class="ut_tag_colores_4"></div><div class="ut_tag_colores_5"></div><div class="ut_tag_colores_6"></div></div><br><input class="ut_tag_color" value="'+tags[nick].color+'" maxlength="26"><br />&gt; <span class="ut_tag_link_span"><a href="' + tags[nick].link + '" target="_blank">Link</a></span><br><input class="ut_tag_link" value="'+tags[nick].link+'"><br />&gt; Descripción<br><textarea class="ut_tag_desc" style="width: 110px;">'+tags[nick].desc+'</textarea><br /><input type="submit" style="margin-top: 1px;" value="Guardar"></form></div>');
+		    .append(
+			'<div class="ut_tag" style="background-color: ' + tags[nick].color+'">' + tags[nick].tag + '</div><div class="ut_tag_info" style="display:none;"><div class="ut_tag_info_cerrar">x</div><form class="ut_tag_form">&gt; Tag<br><input class="ut_tag_tag" value="'+tags[nick].tag+'" maxlength="25"><br />&gt; Color<div class="ut_tag_colores" style="display: inline;"><div class="ut_tag_colores_1"></div><div class="ut_tag_colores_2"></div><div class="ut_tag_colores_3"></div><div class="ut_tag_colores_4"></div><div class="ut_tag_colores_5"></div><div class="ut_tag_colores_6"></div></div><br><input class="ut_tag_color" value="'+tags[nick].color+'" maxlength="26"><br />&gt; <span class="ut_tag_link_span"><a href="' + tags[nick].link + '" target="_blank">Link</a></span><br><input class="ut_tag_link" value="'+tags[nick].link+'"><br />&gt; Descripción<br><textarea class="ut_tag_desc" style="width: 110px;">'+tags[nick].desc+'</textarea><br /><input type="submit" style="margin-top: 1px;" value="Guardar"></form></div>');
 
 		if (tags[nick].link === "") { // quita el link si no tiene enlace
 		    $this
@@ -32,7 +60,7 @@
 	    else {
 		$this
 		    .closest('.autor')
-		    .append('<div class="ut_tag ut_tag_vacia" style="background-color: #aaaaaa; opacity: 0.25; width: 9px; height: 15px; overflow: hidden;">+ etiqueta</div><div class="ut_tag_info" style="display:none;"><div class="ut_tag_info_cerrar">x</div><form class="ut_tag_form">&gt; Tag<br><input class="ut_tag_tag" placeholder="Tag" maxlength="25"><br />&gt; Color<div class="ut_tag_colores" style="display: inline;"><div class="ut_tag_colores_1"></div><div class="ut_tag_colores_2"></div><div class="ut_tag_colores_3"></div><div class="ut_tag_colores_4"></div><div class="ut_tag_colores_5"></div><div class="ut_tag_colores_6"></div></div><br><input class="ut_tag_color" placeholder="#5eadb9" maxlength="26"><br />&gt; <span class="ut_tag_link_span">Link</span><br><input class="ut_tag_link" placeholder="http://"><br />&gt; Descripción<br><textarea placeholder="Descripción" class="ut_tag_desc" style="width: 110px;"></textarea><br /><input type="submit" style="margin-top: 1px;" value="Guardar"></form></div>');
+		    .append(DEFAULT_TAG);
 	    }
 
 	    $this
@@ -117,7 +145,7 @@
 				.hide();
 			});
 		    }
-		    UserTools.options.set('-Tags', tags);
+		    UT.options.set('-Tags', tags);
 
 		    return false;
 		});

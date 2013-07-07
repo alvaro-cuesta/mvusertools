@@ -2,11 +2,11 @@
  * Links importantes en el footer.
  */
 
-(function($, UserTools) {
-    UserTools.options.setDefault('linksfooter', true);
-    UserTools.options.setDefault('linksfooteroscuro', false);
+(function($, UT) {
+    UT.options.setDefault('linksfooter', true);
+    UT.options.setDefault('linksfooteroscuro', false);
 
-    UserTools.options.$('linksfooter', function () {
+    UT.options.$('linksfooter', function () {
 	var $linkFooter = $('#nav_bar #userinfo')
 	    .clone()
 	    .removeAttr('id')
@@ -36,7 +36,7 @@
 
 	$('.ut-linksfooter a').removeAttr('id');
 
-        var show_dark = UserTools.isDark || UserTools.options.get('linksfooteroscuro');
+        var show_dark = UT.isDark || UT.options.get('linksfooteroscuro');
 
 	$('.ut-linksfooter').addClass(
 	    show_dark ? 'ut-linksfooter-negro' : 'ut-linksfooter-blanco');

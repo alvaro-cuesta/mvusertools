@@ -5,14 +5,14 @@
 // @description    Añade controles avanzados a los posts en MV
 // @grant          GM_addStyle
 // @include        http://www.mediavida.com/*
-// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js
+// @require        http://ajax.googleapiscom/ajax/libs/jquery/1.8.2/jquery.min.js
 // @require        http://www.mvusertools.com/ext/libs/tinycon.min.js
 // @require        http://www.mvusertools.com/ext/libs/jquery.a-tools-1.5.2.js
 // @require        http://www.mvusertools.com/ext/libs/mousetrap.js
 // @require        http://www.mvusertools.com/ext/libs/jquery.scrollto.js
 // ==/UserScript==
 
-JSON = {
+window.JSON = {
     encode: JSON.encode || JSON.stringify,
     decode: JSON.decode || JSON.parse
 };
@@ -32,7 +32,11 @@ for (key in localStorage) {
 }
 
 window.UserTools = {
-    version: '2.0.0beta-k',  // ¡Cambiar en otro lados!
+    version: '2.0.0beta-k',  // ¡Cambiar en otros lados!
+    patchNotes: [
+	'Cambio de arquitectura (bug alert).',
+	'Mejoras de rendimiento.'
+    ],
     options: {
 	get: function(opcion, defecto) {
 	    opcion = 'ut' + opcion;
@@ -59,14 +63,14 @@ window.UserTools = {
             window.UserTools.set(opcion, !window.UserTools.get(opcion));
 	},
 	$: function(option, callback) {
-	    if (UserTools.options.get(option)) {
+	    if (window.UserTools.options.get(option)) {
 		$(function () {
 		    callback();
 		})
 	    }
         },
 	not$: function(option, callback) {
-	    if (!UserTools.options.get(option)) {
+	    if (!window.UserTools.options.get(option)) {
 		$(function () {
 		    callback();
 		})
@@ -75,14 +79,34 @@ window.UserTools = {
     }
 };
 
-(function ($, UserTools) {
+// Add CSS loading function
+if (typeof GM_addStyle !== 'undefined') {
+    window.UserTools.css = GM_addStyle;
+} else if (typeof PRO_addStyle !== 'undefined') {
+    window.UserTools.css = PRO_addStyle;
+} else if (typeof addStyle !== 'undefined') {
+    window.UserTools.css = addStyle;
+} else {
+    window.UserTools.css = function () {
+	var heads = document.getElementsByTagName("head");
+	if (heads.length > 0) {
+            var node = document.createElement("style");
+            node.type = "text/css";
+            node.appendChild(document.createTextNode(css));
+            heads[0].appendChild(node);
+	}
+    }
+}
+
+// Fetch info from the page
+(function ($, UT) {
     $(function () {
-	UserTools.user = $('.lu').html();
-	UserTools.isDark = $("link[rel='stylesheet']").filter(function () {
+	UT.user = $('.lu').html();
+	UT.isDark = $("link[rel='stylesheet']").filter(function () {
             return this.href.match('\/style\/[0-9]+\/mv_oscuro\.css')
 	}).length > 0;
-	UserTools.postitlive = $("div#pi_body div.embedded object").length > 0;
-	UserTools.live = $('div.live_info').length > 0;
+	UT.postitlive = $("div#pi_body div.embedded object").length > 0;
+	UT.live = $('div.live_info').length > 0;
     });
 })(jQuery, window.UserTools);
 
@@ -92,67 +116,3 @@ window.UserTools.options.setDefault('iconosportada', true);
 window.UserTools.options.setDefault('iconosdestacados', true);
 window.UserTools.options.setDefault('newquote', true);
 window.UserTools.options.setDefault('salvarposts', false);
-
-
-// Nuevo estilo para los QUOTES
-// jQuery(function() {
-// if (UserTools.options.get('newquote')) {
-// jQuery(function() {
-// if (UserTools.isDark == 0) {
-// jQuery('div.msg div.body').addClass('newquote');
-// }
-// else {
-// jQuery('div.msg div.body').addClass('newquoteblack');
-// }
-// });
-// }
-// });
-
-// > Greentext (no funciona, hace que dejen de ir los popups de las imagenes y los el hover de los quotes)
-// > Implicando que no mola
-//version original
-// jQuery('div[id^="cuerpo_"]').html(
-// function (i,h) {
-// return h.replace(/^\s*&gt.*/mg, function(a) {
-// if (UserTools.isDark) {
-// return "<span style='color: #A7BD68;'>" + a + "</span>"
-// } else {
-// return "<span style='color: #789922;'>" + a + "</span>"
-// }
-// });
-// });
-//nueva prueba
-// jQuery(document).on('click','body', function(){
-// jQuery('div[id^="cuerpo_"]').html(
-// function (i,h) {
-// return h.replace(/^\s*&gt.*/mg, function(a) {
-// if (UserTools.isDark) {
-// return "<span style='color: #A7BD68;'>" + a + "</span>"
-// } else {
-// return "<span style='color: #789922;'>" + a + "</span>"
-// }
-// });
-// });
-// });
-
-// Salvar forms .remove()
-/* @require        http://www.mvusertools.com/ext/libs/sisyphus.js */
-/*jQuery(function () {
-    var utavisopostguardado = '<div style="display: none;float: left; margin-top: 28px; opacity: 0.3;">Texto guardado...</div>';
-    if (UserTools.options.get('salvarposts') && !UserTools.live) {
-        jQuery('form#postear').sisyphus({
-            customKeyPrefix: 'utextendido',
-            name: 'postear',
-            timeout: 15,
-            autoRelease: true,
-            onSave: function () {
-                jQuery(utavisopostguardado).insertAfter('form#postear div[style="width: 410px"]').fadeIn('slow', function () {
-                    jQuery(this).delay(2000).fadeOut('slow', function () {
-                        jQuery(this).delay(1000).remove();
-                    });
-                });
-            },
-        });
-    }
-});
-*/

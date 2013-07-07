@@ -5,13 +5,13 @@
 // @description    Añade controles avanzados a los posts en MV
 // @grant          GM_addStyle
 // @include        http://www.mediavida.com/*
-// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js
+// @require        http://ajax.googleapiscom/ajax/libs/jquery/1.8.2/jquery.min.js
 // @require        http://www.mvusertools.com/ext/libs/tinycon.min.js
 // @require        http://www.mvusertools.com/ext/libs/jquery.a-tools-1.5.2.js
 // @require        http://www.mvusertools.com/ext/libs/mousetrap.js
 // @require        http://www.mvusertools.com/ext/libs/jquery.scrollto.js
 // ==/UserScript==
-JSON = {
+window.JSON = {
     encode: JSON.encode || JSON.stringify,
     decode: JSON.decode || JSON.parse
 };
@@ -32,7 +32,8 @@ for (key in localStorage) {
 
 window.UserTools = {
     version: "2.0.0beta-k",
-    // ¡Cambiar en otro lados!
+    // ¡Cambiar en otros lados!
+    patchNotes: [ "Cambio de arquitectura (bug alert).", "Mejoras de rendimiento." ],
     options: {
         get: function(opcion, defecto) {
             opcion = "ut" + opcion;
@@ -56,14 +57,14 @@ window.UserTools = {
             window.UserTools.set(opcion, !window.UserTools.get(opcion));
         },
         $: function(option, callback) {
-            if (UserTools.options.get(option)) {
+            if (window.UserTools.options.get(option)) {
                 $(function() {
                     callback();
                 });
             }
         },
         not$: function(option, callback) {
-            if (!UserTools.options.get(option)) {
+            if (!window.UserTools.options.get(option)) {
                 $(function() {
                     callback();
                 });
@@ -72,14 +73,34 @@ window.UserTools = {
     }
 };
 
-(function($, UserTools) {
+// Add CSS loading function
+if (typeof GM_addStyle !== "undefined") {
+    window.UserTools.css = GM_addStyle;
+} else if (typeof PRO_addStyle !== "undefined") {
+    window.UserTools.css = PRO_addStyle;
+} else if (typeof addStyle !== "undefined") {
+    window.UserTools.css = addStyle;
+} else {
+    window.UserTools.css = function() {
+        var heads = document.getElementsByTagName("head");
+        if (heads.length > 0) {
+            var node = document.createElement("style");
+            node.type = "text/css";
+            node.appendChild(document.createTextNode(css));
+            heads[0].appendChild(node);
+        }
+    };
+}
+
+// Fetch info from the page
+(function($, UT) {
     $(function() {
-        UserTools.user = $(".lu").html();
-        UserTools.isDark = $("link[rel='stylesheet']").filter(function() {
+        UT.user = $(".lu").html();
+        UT.isDark = $("link[rel='stylesheet']").filter(function() {
             return this.href.match("/style/[0-9]+/mv_oscuro.css");
         }).length > 0;
-        UserTools.postitlive = $("div#pi_body div.embedded object").length > 0;
-        UserTools.live = $("div.live_info").length > 0;
+        UT.postitlive = $("div#pi_body div.embedded object").length > 0;
+        UT.live = $("div.live_info").length > 0;
     });
 })(jQuery, window.UserTools);
 
@@ -116,25 +137,30 @@ window.UserTools.options.setDefault("salvarposts", false);
 /*
  * Atajos de teclado.
  */
-(function($, document, Mousetrap, UserTools) {
+(function($, document, Mousetrap, UT) {
     // Constants
     var BASE_URL = "http://www.mediavida.com";
     var REDIRECCIONES = {
         "ctrl+alt+e": "/foro/favoritos",
-        "ctrl+alt+q": "/id/" + UserTools.user,
         "ctrl+alt+w": "/notificaciones",
         "ctrl+alt+r": "/mensajes",
         "ctrl+alt+a": "/foro",
         "ctrl+alt+d": "/foro/spy"
     };
     // Redirecciones genéricas
+    var hotkey;
     for (hotkey in REDIRECCIONES) {
-        if (REDIRECCIONES.hasOwnProperty(hotkey)) {
+        (function(hotkey) {
             Mousetrap.bind(hotkey, function() {
                 document.location = BASE_URL + REDIRECCIONES[hotkey];
             });
-        }
+        })(hotkey);
     }
+    $(function() {
+        Mousetrap.bind("ctrl+alt+q", function() {
+            document.location = BASE_URL + "/id/" + UT.user;
+        });
+    });
     // Previous/next page
     var previousPageLink = jQuery($(".tnext")).attr("href");
     var nextPageLink = jQuery($(".tprev")).attr("href");
@@ -165,10 +191,10 @@ window.UserTools.options.setDefault("salvarposts", false);
 /*
  * Links importantes en el footer.
  */
-(function($, UserTools) {
-    UserTools.options.setDefault("linksfooter", true);
-    UserTools.options.setDefault("linksfooteroscuro", false);
-    UserTools.options.$("linksfooter", function() {
+(function($, UT) {
+    UT.options.setDefault("linksfooter", true);
+    UT.options.setDefault("linksfooteroscuro", false);
+    UT.options.$("linksfooter", function() {
         var $linkFooter = $("#nav_bar #userinfo").clone().removeAttr("id").addClass("ut-linksfooter");
         // Vista de foro
         if ($('a.boton[href^="/foro/post.php?f"]').length > 0) {
@@ -182,7 +208,7 @@ window.UserTools.options.setDefault("salvarposts", false);
             $(".tpanel #mmform").closest("div").css("margin-top", "55px");
         }
         $(".ut-linksfooter a").removeAttr("id");
-        var show_dark = UserTools.isDark || UserTools.options.get("linksfooteroscuro");
+        var show_dark = UT.isDark || UT.options.get("linksfooteroscuro");
         $(".ut-linksfooter").addClass(show_dark ? "ut-linksfooter-negro" : "ut-linksfooter-blanco");
     });
 })(jQuery, window.UserTools);
@@ -190,8 +216,8 @@ window.UserTools.options.setDefault("salvarposts", false);
 /*
  * Lista de mods en sidebar.
  */
-(function($, UserTools) {
-    UserTools.options.setDefault("tablamods", true);
+(function($, UT) {
+    UT.options.setDefault("tablamods", true);
     var mods = {
         1: [ "bazoo", "jadgix", "J40", "RaymaN", "TazzMaTazz" ],
         2: [ "Eristoff", "kalinka-" ],
@@ -248,9 +274,10 @@ window.UserTools.options.setDefault("salvarposts", false);
         136: [ "HeXaN", "Prostyler", "thunder_" ]
     };
     // Mods de cada foro
-    UserTools.options.$("tablamods", function() {
+    UT.options.$("tablamods", function() {
         if ($('div#topnav a[href="/foro/"]').length > 0 && $("div.live_info").length === 0) {
-            var $modlist = $('<div class="box"><div id="modlist"><h3>Moderadores</h3></div></div>').addClass(!UserTools.isDark ? "modlistblanco" : "modlistnegro").appendTo("div.smallcol, div.tinycol");
+            var $box = $('<div class="box">').appendTo("div.smallcol, div.tinycol");
+            var $modlist = $('<div id="modlist"><h3>Moderadores</h3></div>').addClass(!UT.isDark ? "modlistblanco" : "modlistnegro").appendTo($box);
             var id = $("input#fid").attr("value");
             if (typeof mods[id] === "undefined") {
                 $("<p/>").html("<span>Este foro no tiene mods o no están listados.</span>").appendTo($modlist);
@@ -266,24 +293,28 @@ window.UserTools.options.setDefault("salvarposts", false);
 /*
  * Marcápaginas en los posts a los que entras directamente (URLs acabas en #xx...)
  */
-(function($, UserTools) {
-    UserTools.options.setDefault("marcapaginas", true);
-    UserTools.options.$("marcapaginas", function() {
-        $("div.mark").attr("style", 'background-image: url("http://www.mvusertools.com/ext/img/marcapaginas2.png") !important; background-repeat: no-repeat !important; background-position: 100px top !important;');
+(function($, UT) {
+    UT.options.setDefault("marcapaginas", true);
+    UT.options.$("marcapaginas", function() {
+        $("div.mark").css({
+            "background-image": 'url("http://www.mvusertools.com/ext/img/marcapaginas2.png")',
+            "background-repeat": "no-repeat",
+            "background-position": "100px top"
+        });
     });
 })(jQuery, window.UserTools);
 
 /*
  *  Muestra los avisos (favs, avisos, mensajes) en el favicon de la web.
  */
-(function($, UserTools, Tinycon) {
-    UserTools.options.setDefault("favicon", true);
-    UserTools.options.$("favicon", function() {
+(function($, UT, Tinycon) {
+    UT.options.setDefault("favicon", true);
+    UT.options.$("favicon", function() {
         var favs = $('#userinfo a[href^="/foro/favoritos"] strong.bubble').html();
         var avisos = $('#userinfo a[href^="/notificaciones"] strong.bubble').html();
         var mensajes = $('#userinfo a[href^="/mensajes"] strong.bubble').html();
         var total = 0;
-        if (typeof notificaciones !== "undefined") {
+        if (typeof favs !== "undefined") {
             total += parseInt(favs, 10);
         }
         if (typeof avisos !== "undefined") {
@@ -299,7 +330,7 @@ window.UserTools.options.setDefault("salvarposts", false);
     });
 })(jQuery, window.UserTools, Tinycon);
 
-(function($) {
+(function($, UT) {
     $(function() {
         // Botonera en formulario extendido
         $('button[accesskey="b"]').hide();
@@ -404,7 +435,7 @@ window.UserTools.options.setDefault("salvarposts", false);
             $("#ut-menu-tabla4").show();
         });
         // Botonera en el fast-edit
-        if (!UserTools.live) {
+        if (!UT.live) {
             var botonessolounavez = function() {
                 var fasteditbuttons = function() {
                     $('<div style="overflow: hidden;margin: 0 0px 10px -5px;clear: both"><button type="button" accesskey="b" class="alt bleft bb" id="ut-boton-b-fast">b</button><button type="button" accesskey="i" class="alt bcenter bi" id="ut-boton-i-fast">i</button><button type="button" accesskey="u" class="alt bcenter2 bu" id="ut-boton-u-fast">u</button><button type="button" accesskey="x" class="alt bright bs" id="ut-boton-s-fast">s</button><button title="[center]" type="button" accesskey="c" id="ut-boton-center-fast" class="alt bsolo"><a class="sprite bcentericon"></a></button><button title="[list] Usar * para cada elemento de la lista" type="button" id="ut-boton-list-fast" class="alt bsolo"><a class="blist sprite"></a></button><button type="button" accesskey="l" class="alt bsolo" id="ut-boton-url-fast">[url=]</button><button title="[img]" type="button" accesskey="m" class="alt bleft" id="ut-boton-img-fast"><a class="bimg sprite"></a></button><button title="[video]" type="button" accesskey="v" class="alt bcenter" id="ut-boton-video-fast"><a class="bvideo sprite"></a></button><button type="button" class="alt bright" title="[audio]" id="ut-boton-audio-fast"><a class="baudio sprite"></a></button><button type="button" accesskey="s" class="alt bleft" id="ut-boton-spoiler-fast">[spoiler]</button><button type="button" accesskey="d" class="alt bcenter" id="ut-boton-spoiler2-fast">[spoiler=]</button><button type="button" accesskey="n" class="alt bright" id="ut-boton-nsfw-fast">NSFW</button><button type="button" id="ut-boton-bar-fast" class="alt bsolo">[bar]</button><button type="button" class="alt bsolo" id="ut-boton-code-fast">[code]</button></div>').insertBefore('div.msg div.body div textarea:not("div.extraportada textarea")');
@@ -574,38 +605,33 @@ window.UserTools.options.setDefault("salvarposts", false);
             }
         });
     });
-})(jQuery);
+})(jQuery, window.UserTools);
 
 /*
  * Infomración del perfil en la lista de users.
  */
-(function($, UserTools) {
+(function($, UT) {
     var TIMEOUT = 1e3;
-    UserTools.options.setDefault("userinfo", true);
-    UserTools.options.$("userinfo", function() {
+    var FADE = 400;
+    UT.options.setDefault("userinfo", true);
+    UT.options.$("userinfo", function() {
+        var $usercard = $('<div id="ajax_usercard">').css({
+            backgroundColor: UT.isDark ? "#39444B" : "whitesmoke",
+            borderRadius: "6px",
+            padding: "10px 5px 5px 5px",
+            position: "absolute",
+            overflow: "hidden",
+            boxShadow: "1px 1px 5px rgba(0, 0, 0, 0.25)",
+            zIndex: "9999"
+        }).appendTo($("body"));
+        var request = null;
+        var timeout = null;
         var info_box = function(id, left, top) {
-            var aborted = false;
-            var request;
-            var timeout = setTimeout(function() {
-                request = $.get("http://www.mediavida.com/id/" + id, function(data) {
-                    $("#ajax_usercard").remove();
-                    var $usercard = $('<div id="ajax_usercard">' + $(".infoavatar", data).html() + "</div>");
-                    $("body").append($usercard);
-                    $usercard.css({
-                        "background-color": UserTools.isDark ? "whitesmoke" : "#39444B",
-                        borderRadius: "6px",
-                        padding: "10px 5px 5px 5px",
-                        position: "absolute",
-                        left: x,
-                        top: y,
-                        overflow: "hidden",
-                        $usercardShadow: "1px 1px 5px rgba(0, 0, 0, 0.25)",
-                        zIndex: "9999"
-                    });
-                    $(".useravatar", $usercard).css({
-                        "float": "left",
-                        padding: "5px",
-                        marginRight: "5px"
+            timeout = setTimeout(function() {
+                request = $.get("http://www.mediavida.com/id/" + id, function($data) {
+                    $usercard.html($(".infoavatar", $data).html()).css({
+                        left: left,
+                        top: top
                     });
                     $(".userinfo", $usercard).css({
                         borderRadius: "6px",
@@ -613,37 +639,43 @@ window.UserTools.options.setDefault("salvarposts", false);
                         height: "90px",
                         backgroundColor: "#F4F6F1",
                         "float": "left",
-                        padding: "5px",
+                        padding: "7px 5px 0 5px",
                         position: "relative",
                         zoom: "1"
                     });
+                    $(".useravatar", $usercard).css({
+                        "float": "left",
+                        padding: "5px",
+                        marginRight: "5px"
+                    }).find("img").load(function() {
+                        $usercard.fadeIn(FADE);
+                    });
                 });
             }, TIMEOUT);
-            return function() {
-                if (!aborted) {
-                    clearTimeout(timeout);
-                    if (typeof request !== "undefined") {
-                        request.abort();
-                    }
-                    $("#ajax_usercard").remove();
-                    aborted = true;
-                }
-            };
         };
-        var abort;
         $(".post .autor dt a").hover(function() {
             var $this = $(this);
             var offset = $this.offset();
-            abort = info_box($this.attr("href").match(/id\/(.+)/)[1], offset.left - 10, offset.top + 14);
-        }, abort);
+            info_box($this.attr("href").match(/id\/(.+)/)[1], offset.left - 10, offset.top + 15);
+        }, function() {
+            if (timeout !== null) {
+                clearTimeout(timeout);
+                timeout = null;
+            }
+            if (request !== null) {
+                request.abort();
+                request = null;
+            }
+            $usercard.fadeOut(FADE);
+        });
     });
 })(jQuery, window.UserTools);
 
 /*
  * Cambios de nombres en foros y usuarios + cambio de CTs.
  */
-(function($, UserTools) {
-    UserTools.options.setDefault("CambiosNombre", true);
+(function($, UT) {
+    UT.options.setDefault("CambiosNombre", true);
     var NICKS = {
         Alien_crrpt: {
             nick: "Alien_derp"
@@ -674,7 +706,7 @@ window.UserTools.options.setDefault("salvarposts", false);
     var FOROS = {
         "Juegos móvil": "Shitphones"
     };
-    UserTools.options.$("CambiosNombre", function() {
+    UT.options.$("CambiosNombre", function() {
         // Usuarios
         // TODO: Mejorable
         var cambiar_usuario = function(original, info) {
@@ -716,11 +748,11 @@ window.UserTools.options.setDefault("salvarposts", false);
     });
 })(jQuery, window.UserTools);
 
-(function($, UserTools) {
-    UserTools.options.setDefault("filtrarfavs", true);
-    UserTools.options.setDefault("ordenarposts", true);
+(function($, UT) {
+    UT.options.setDefault("filtrarfavs", true);
+    UT.options.setDefault("ordenarposts", true);
     // Filtrar favoritos
-    if (UserTools.options.get("filtrarfavs")) {
+    if (UT.options.get("filtrarfavs")) {
         $(function() {
             $("#favoritos .tinycol").prepend('<div id="ut-filtros-fav">');
             $('<h3 id="ut-fav-filto-titulo">').text("Filtros").insertBefore("#ut-filtros-fav");
@@ -789,7 +821,7 @@ window.UserTools.options.setDefault("salvarposts", false);
         });
     }
     // Ordenar por respuestas sin leer en favoritos (bug con hilos con 1k)
-    if (UserTools.options.get("ordenarposts")) {
+    if (UT.options.get("ordenarposts")) {
         $(function() {
             var $table = $("div#main table.full");
             $('<span style="font-size: 10px; margin-left: 20px;">Ordenar por: <span style="cursor: pointer; color: #EF5000;" id="ut-fav-fecha">Fecha</span> | <span style="cursor: pointer; color: #999999;" id="ut-fav-posts">Respuestas sin leer</span></span>').insertAfter("body#favoritos table#tfav th span.left");
@@ -818,20 +850,20 @@ window.UserTools.options.setDefault("salvarposts", false);
             });
         });
     }
-})(jQuery, UserTools);
+})(jQuery, window.UserTools);
 
 /*
  * Permite ocultar filtros en el spy.
  */
-(function($, UserTools) {
-    UserTools.options.not$("filtrarOpcion", function() {
+(function($, UT) {
+    UT.options.not$("filtrarOpcion", function() {
         var $nofids = $("#nofids");
         var $utfiltrar = $nofids.siblings("h3");
         var $utfiltrarP = $nofids.closest(".box").siblings("p");
         $utfiltrar.addClass("ut-filtrar").click(function() {
             $nofids.slideToggle();
             $utfiltrarP.toggle();
-            UserTools.options.toggle("filtrarOpcion");
+            UT.options.toggle("filtrarOpcion");
         });
         $nofids.toggle();
         $utfiltrarP.toggle();
@@ -844,26 +876,27 @@ window.UserTools.options.setDefault("salvarposts", false);
  * - Nuevo estilo.
  * - Boton de cerrar el spoiler al final.
  */
-(function($, UserTools) {
-    UserTools.options.setDefault("estilospoilers", true);
-    UserTools.options.setDefault("cerrarspoilers", false);
+(function($, UT) {
+    var CLOSE_SPOILER = '<br /> <br /> <a class="ut-cerrarspoiler-boton" style="cursor: pointer;">Cerrar Spoiler</a>';
+    UT.options.setDefault("estilospoilers", true);
+    UT.options.setDefault("cerrarspoilers", false);
     // Estilos para los spoilers
-    // TODO: Mejorable?
-    UserTools.options.$("estilospoilers", function() {
+    UT.options.$("estilospoilers", function() {
         $(".spoiler").each(function() {
-            var spoiler_id = $(this).attr("rel");
-            $("#" + spoiler_id).addClass(!UserTools.isDark ? "spoiler-content" : "spoiler-content-black");
+            $("#" + $(this).attr("rel")).addClass(!UT.isDark ? "spoiler-content" : "spoiler-content-black");
         });
     });
     // Botón para cerrar spoiler al final del mismo
-    // TODO: Mejorable
-    UserTools.options.$("cerrarspoilers", function() {
-        $('div[id^="cuerpo_"] div[id^="sp_"]').append('<br /><br /><a class="ut-cerrarspoiler-boton" style="cursor: pointer;">Cerrar Spoiler</a>');
+    // TODO: Mejorable?
+    //       Scroll al spoiler, no al post
+    UT.options.$("cerrarspoilers", function() {
+        $('div[id^="cuerpo_"] div[id^="sp_"]').append(CLOSE_SPOILER);
         $(".ut-cerrarspoiler-boton").click(function() {
-            var utSpoilerPostId = $(this).closest("div.post").attr("id");
-            var utSpoilerId = $(this).closest('div[id^="sp_"]').attr("id");
-            $(this).closest('div[id^="sp_"]').siblings('a[rel="' + utSpoilerId + '"]').removeClass("less");
-            $(this).closest('div[id^="' + utSpoilerId + '"]').hide();
+            var $this = $(this);
+            var utSpoilerPostId = $this.closest("div.post").attr("id");
+            var utSpoilerId = $this.closest('div[id^="sp_"]').attr("id");
+            $this.closest('div[id^="sp_"]').siblings('a[rel="' + utSpoilerId + '"]').removeClass("less");
+            $this.closest('div[id^="' + utSpoilerId + '"]').hide();
             $("#" + utSpoilerPostId).ScrollTo({
                 duration: 0
             });
@@ -871,72 +904,63 @@ window.UserTools.options.setDefault("salvarposts", false);
     });
 })(jQuery, window.UserTools);
 
-(function(window, document, $, UserTools) {
-    UserTools.options.setDefault("forosfavs", true);
-    UserTools.options.$("forosfavs", function() {
+(function(window, document, $, UT) {
+    UT.options.setDefault("forosfavs", true);
+    UT.options.$("forosfavs", function() {
+        // Container
+        var $favs = $('<ul id="ut-foros-fav">');
+        $('<div id="sticky-anchor" style="position: absolute; top: 200px;">').insertBefore("#content_body, #content_head");
+        $('<div id="foros-fav-float">').append($("<div>").append($favs)).insertAfter("#sticky-anchor");
+        // Add favorites
         var favs;
+        var remove = function(index) {
+            favs.splice(index, 1);
+            UT.options.set("-favs", favs);
+            update();
+        };
         var update = function() {
-            favs = UserTools.options.get("-favs", []);
-            $favs = $("#ut-foros-fav").html("");
+            $favs.html("");
+            favs = UT.options.get("-favs", []);
             var i;
             for (i = 0; i < favs.length; i++) {
-                $favs.append($('<li><a href="/foro/' + favs[i] + '"><i class="ifid fid_' + favs[i] + '"></i></a><div class="ut-foros-fav-borrar"><i class="sprite UT-trash"></i></div></li>'));
+                (function(i) {
+                    // Botón para borrar
+                    var $borrar = $('<i class="sprite UT-trash">').click(function() {
+                        remove(i);
+                    });
+                    $("<li>").append('<a href="/foro/' + favs[i] + '"><i class="ifid fid_' + favs[i] + '"></i></a>').append($('<div class="ut-foros-fav-borrar">').append($borrar)).appendTo($favs);
+                })(i);
             }
         };
         update();
-        // Container
-        $('<div id="sticky-anchor" style="position: absolute; top: 200px;">').insertBefore("#content_body, #content_head");
-        $('<div id="foros-fav-float">').append('<div><ul id="ut-foros-fav">').insertAfter("#sticky-anchor");
         // Boton para añadir a favs
-        $("div.fpanel div.icon").append('<div class="ut-foro-fav-add">').hover(function() {
+        $icons = $("div.fpanel div.icon");
+        $icons.hover(function() {
             $(".ut-foro-fav-add", this).addClass("ut-foro-fav-add-moveup");
         }, function() {
             $(".ut-foro-fav-add", this).removeClass("ut-foro-fav-add-moveup");
         });
-        $(".ut-foro-fav-add").click(function() {
-            $this = $(this);
-            $this.closest("div.icon").find("i.ifid").each(function() {
-                var foroNumber = $this.attr("class").match(/fid_(.*)/)[1];
-                var index = $.inArray(foroNumber, favs) > -1;
-                if (index) {
-                    favs.splice(index, 1);
-                    UserTools.options.set("-favs", favs);
-                    $('#foros-fav-float a[href="/foro/' + foroNumber + '"]').closest("li").remove();
-                } else {
-                    favs.push(foroNumber);
-                    UserTools.options.set("-favs", favs);
-                    $("#ut-foros-fav").append('<li><a href="/foro/' + foroNumber + '"><i class="ifid fid_' + foroNumber + '"></i></a><div class="ut-foros-fav-borrar"><i class="sprite UT-trash"></i></div></li>');
+        $icons.each(function() {
+            var $icon = $(this);
+            $("i.ifid", $icon).each(function() {
+                var foroNumber = $(this).attr("class").match(/fid_(.*)/)[1];
+                // Star icon
+                var $star = $('<div class="ut-foro-fav-add">').click(function() {
+                    $(this).toggleClass("ut-foro-fav-added");
+                    var index = $.inArray(foroNumber, favs);
+                    if (index > -1) {
+                        remove(index);
+                    } else {
+                        favs.push(foroNumber);
+                        UT.options.set("-favs", favs);
+                    }
+                    update();
+                });
+                var index = $.inArray(foroNumber, favs);
+                if (index > -1) {
+                    $star.addClass("ut-foro-fav-added");
                 }
-            });
-            $this.toggleClass("ut-foro-fav-added");
-        });
-        // Botón para borrar
-        $(document).on("click", ".ut-foros-fav-borrar", function() {
-            $this = $(this);
-            $this.siblings('a[href^="/foro"]').each(function() {
-                var enlace = this + "";
-                var split = enlace.split("/");
-                var path = split.splice(1, split.length - 1);
-                var pathIndexToGet = 3;
-                var foroNumber = path[pathIndexToGet];
-                favs.splice($.inArray(foroNumber, favs), 1);
-                UserTools.options.set("-favs", favs);
-                $this.closest("li").remove();
-                $("div.fpanel").find('a[href="/foro/' + foroNumber + '"]').closest("div.info").siblings("div.icon").children("div.ut-foro-fav-add").toggleClass("ut-foro-fav-added");
-            });
-        });
-        // Pone la estrella correcta
-        $("div.fpanel div.icon").each(function() {
-            $this = $(this);
-            $this.siblings("div.info").find("a.hb,strong a").each(function() {
-                var enlace = this + "";
-                var split = enlace.split("/");
-                var path = split.splice(1, split.length - 1);
-                var pathIndexToGet = 3;
-                var foroNumber = path[pathIndexToGet];
-                if ($.inArray(foroNumber, favs) > -1) {
-                    $this.closest("div.info").siblings("div.icon").children("div.ut-foro-fav-add").toggleClass("ut-foro-fav-added");
-                }
+                $icon.append($star);
             });
         });
         // Panel flotante sigue el scroll
@@ -961,26 +985,29 @@ window.UserTools.options.setDefault("salvarposts", false);
 /*
  * Links de favs/avisos/mensajes al estilo antiguo.
  */
-(function($, UserTools) {
-    UserTools.options.setDefault("antiguoslinksuserinfo", false);
-    UserTools.options.$("antiguoslinksuserinfo", function() {
-        var utnotifylinkdesnudo = $("#nav_bar a#notifylink").closest("li").clone();
-        var utfavslinkdesnudo = $("#nav_bar a#favslink").closest("li").clone();
-        var utmplinkdesnudo = $("#nav_bar a#mplink").closest("li").clone();
-        $("#nav_bar a#notifylink").closest("li").remove();
-        $("#nav_bar a#favslink").closest("li").remove();
-        $("#nav_bar a#mplink").closest("li").remove();
-        var navbarAncla = $('#nav_bar a[href^="/id/"]').closest("li");
-        utnotifylinkdesnudo.add(utfavslinkdesnudo).add(utmplinkdesnudo).insertAfter(navbarAncla);
+(function($, UT) {
+    UT.options.setDefault("antiguoslinksuserinfo", false);
+    UT.options.$("antiguoslinksuserinfo", function() {
+        var $notify = $("#nav_bar a#notifylink");
+        var $favs = $("#nav_bar a#favslink");
+        var $mps = $("#nav_bar a#mplink");
+        var $new_notify = $notify.closest("li").clone();
+        var $new_favs = $favs.closest("li").clone();
+        var $new_mps = $mps.closest("li").clone();
+        $notify.closest("li").remove();
+        $favs.closest("li").remove();
+        $mps.closest("li").remove();
+        var $all = $new_notify.add($new_favs).add($new_mps);
+        $('#nav_bar a[href^="/id/"]').closest("li").after($all);
     });
 })(jQuery, window.UserTools);
 
 /*
  * Hilos con live destacados (sólo funciona con theme normal).
  */
-(function($, UserTools) {
-    UserTools.options.setDefault("livesdestacados", true);
-    UserTools.options.$("livesdestacados", function() {
+(function($, UT) {
+    UT.options.setDefault("livesdestacados", true);
+    UT.options.$("livesdestacados", function() {
         $('img[alt="live"]').closest("tr").addClass("ut-live");
     });
 })(jQuery, window.UserTools);
@@ -988,10 +1015,11 @@ window.UserTools.options.setDefault("salvarposts", false);
 /*
  * Sistema de tagging de usuarios.
  */
-(function($, UserTools) {
-    UserTools.options.setDefault("TagsOpcion", true);
-    UserTools.options.$("TagsOpcion", function() {
-        var tags = UserTools.options.get("-Tags", {});
+(function($, UT) {
+    var DEFAULT_TAG = '<div class="ut_tag ut_tag_vacia" style="background-color: #aaaaaa; opacity: 0.25; width: 9px; height: 15px; overflow: hidden;">   + etiqueta </div> <div class="ut_tag_info" style="display:none;">   <div class="ut_tag_info_cerrar">x</div>   <form class="ut_tag_form">     &gt; Tag<br>     <input class="ut_tag_tag" placeholder="Tag" maxlength="25"> <br />     &gt; Color     <div class="ut_tag_colores" style="display: inline;">       <div class="ut_tag_colores_1"></div>       <div class="ut_tag_colores_2"></div>       <div class="ut_tag_colores_3"></div>       <div class="ut_tag_colores_4"></div>       <div class="ut_tag_colores_5"></div>       <div class="ut_tag_colores_6"></div>    </div> <br>    <input class="ut_tag_color" placeholder="#5eadb9" maxlength="26"> <br />    &gt; <span class="ut_tag_link_span">Link</span> <br>    <input class="ut_tag_link" placeholder="http://"> <br />    &gt; Descripción<br>    <textarea placeholder="Descripción" class="ut_tag_desc" style="width: 110px;"></textarea> <br />    <input type="submit" style="margin-top: 1px;" value="Guardar">   </form> </div>';
+    UT.options.setDefault("TagsOpcion", true);
+    UT.options.$("TagsOpcion", function() {
+        var tags = UT.options.get("-Tags", {});
         // Dibuja tags en el hilo
         $(":not(form)> div.post > div.autor > dl > dt > a").each(function() {
             var $this = $(this);
@@ -1004,7 +1032,7 @@ window.UserTools.options.setDefault("salvarposts", false);
                     $this.closest(".autor").children(".ut_tag_info").children(".ut_tag_form").children(".ut_tag_link_span").replaceWith('<span class="ut_tag_link_span">Link</span>');
                 }
             } else {
-                $this.closest(".autor").append('<div class="ut_tag ut_tag_vacia" style="background-color: #aaaaaa; opacity: 0.25; width: 9px; height: 15px; overflow: hidden;">+ etiqueta</div><div class="ut_tag_info" style="display:none;"><div class="ut_tag_info_cerrar">x</div><form class="ut_tag_form">&gt; Tag<br><input class="ut_tag_tag" placeholder="Tag" maxlength="25"><br />&gt; Color<div class="ut_tag_colores" style="display: inline;"><div class="ut_tag_colores_1"></div><div class="ut_tag_colores_2"></div><div class="ut_tag_colores_3"></div><div class="ut_tag_colores_4"></div><div class="ut_tag_colores_5"></div><div class="ut_tag_colores_6"></div></div><br><input class="ut_tag_color" placeholder="#5eadb9" maxlength="26"><br />&gt; <span class="ut_tag_link_span">Link</span><br><input class="ut_tag_link" placeholder="http://"><br />&gt; Descripción<br><textarea placeholder="Descripción" class="ut_tag_desc" style="width: 110px;"></textarea><br /><input type="submit" style="margin-top: 1px;" value="Guardar"></form></div>');
+                $this.closest(".autor").append(DEFAULT_TAG);
             }
             $this.closest(".autor").children(".ut_tag_info").on("submit", "form.ut_tag_form", function() {
                 // guardamos datos del tag
@@ -1051,7 +1079,7 @@ window.UserTools.options.setDefault("salvarposts", false);
                         $this.closest("div.autor").children(".ut_tag_info").hide();
                     });
                 }
-                UserTools.options.set("-Tags", tags);
+                UT.options.set("-Tags", tags);
                 return false;
             });
         });
@@ -1069,15 +1097,15 @@ window.UserTools.options.setDefault("salvarposts", false);
     });
 })(jQuery, window.UserTools);
 
-(function($, UserTools) {
+(function($, UT) {
     $(function() {
         var TOGGLE = "<div id='toggle' class='sprite'><div> ";
-        var INFO = "<span class='blacklisted-post'" + (UserTools.isDark ? " style='color: #626262 !important;'" : "") + ">Click en <img src='http://www.mvusertools.com/ext/img/blacklist-mini.png'> para desbloquear.</span>";
+        var INFO = "<span class='blacklisted-post'" + (UT.isDark ? " style='color: #626262 !important;'" : "") + ">Click en <img src='http://www.mvusertools.com/ext/img/blacklist-mini.png'> para desbloquear.</span>";
         var BARRA = "<div class='nopost barra'> Usuario <span class='mensaje-ocultado'>Blacklisted</span> </div> ";
-        var blacklisted = UserTools.options.get("blacklisted", {});
+        var blacklisted = UT.options.get("blacklisted", {});
         //Set Toggle Class
         $("#scrollpages").append(TOGGLE);
-        if (UserTools.options.get("blacklist")) {
+        if (UT.options.get("blacklist")) {
             $("#toggle").addClass("toggle-on");
             $("#toggle").removeClass("toggle-off");
         } else {
@@ -1116,7 +1144,7 @@ window.UserTools.options.setDefault("salvarposts", false);
             }
             // BARRA
             $(this).parent().before(BARRA);
-            if (UserTools.options.get("blacklist")) {
+            if (UT.options.get("blacklist")) {
                 if (blacklisted[nick]) {
                     $(this).parent().hide();
                 } else {
@@ -1129,19 +1157,19 @@ window.UserTools.options.setDefault("salvarposts", false);
         // Fin de la primera carga
         $("#toggle").click(function() {
             //	$('#toggle').toggleClass("toggle-on toggle-off");
-            if (UserTools.options.get("blacklist")) {
+            if (UT.options.get("blacklist")) {
                 $("#toggle").addClass("toggle-off");
                 $("#toggle").removeClass("toggle-on");
-                UserTools.options.set("blacklist", false);
+                UT.options.set("blacklist", false);
             } else {
                 $("#toggle").addClass("toggle-on");
                 $("#toggle").removeClass("toggle-off");
-                UserTools.options.set("blacklist", true);
+                UT.options.set("blacklist", true);
             }
             //Tenemos un nuevo estado. Si ahora es on, tenemos que ocultar, si es off tenemos que mostrar
             $(".autor").each(function() {
                 var nick = $(this).data("name");
-                if (UserTools.options.get("blacklist")) {
+                if (UT.options.get("blacklist")) {
                     if (blacklisted[nick]) {
                         $(this).parent().prev().show();
                         $(this).parent().hide();
@@ -1167,7 +1195,7 @@ window.UserTools.options.setDefault("salvarposts", false);
                 console.log(blacklisted);
             }
             console.log(blacklisted);
-            UserTools.options.set("blacklisted", blacklisted);
+            UT.options.set("blacklisted", blacklisted);
             // En caso de blacklist ON Tapar los posts del autor si ahora esta blacklisted, o mostrarlos en caso contrario.
             // Si esta off, añadir pijadas o quitarlas.
             $(".autor").each(function() {
@@ -1183,7 +1211,7 @@ window.UserTools.options.setDefault("salvarposts", false);
                     $(this).parent().find(".blacklisted-post").hide();
                     $(this).parent().find(".tapavatares").hide();
                 }
-                if (UserTools.options.get("blacklist")) {
+                if (UT.options.get("blacklist")) {
                     if (blacklisted[nick]) {
                         $(this).parent().prev().show();
                         $(this).parent().slideUp();
@@ -1197,8 +1225,8 @@ window.UserTools.options.setDefault("salvarposts", false);
     });
 })(jQuery, window.UserTools);
 
-(function($, UserTools) {
-    UserTools.options.setDefault("mensajeupdate", false);
+(function($, UT) {
+    UT.options.setDefault("mensajeupdate", false);
     $(function() {
         /////////// MENU ///////////////////////////////////////////////////////////////
         var bottominfo = '<p style="margin-top: 20px; font-size: 9px; color: #888888;">Si ves algún fallo prueba siempre a hacer ctrl+f5. Si así no se ha solucionado comunícanoslo con un post en <a href="http://www.mediavida.com/foro/4/mv-usertools-extension-para-firefox-chrome-safari-413818">el hilo oficial</a> indicando navegador y su versión, sistema operativo y, si es posible, una screen del error.<br /><br />Instrucciones y más información en <a href="http://mvusertools.com" target="_blank">la web oficial de la extensión</a>.</p>';
@@ -1208,7 +1236,7 @@ window.UserTools.options.setDefault("salvarposts", false);
         var utmenutabs = '<div id="ut-menu-tabs"><div id="ut-menu-tab1" class="active">Modulos</div><div id="ut-menu-tab2">Estilos</div><div id="ut-menu-tab4">Macros</div><div id="ut-menu-tab3">Sobre MV-UT</div></div>';
         var utmenutabla1 = '<table id="ut-menu-tabla1" class="ut-opciones"><tbody><tr><td>Ventana con aviso y notas de actualización al actualizar.</td><td><span class="ut-boton-sino" id="ut-utmensajeupdate-si">Si</span> <span class="ut-boton-sino" id="ut-utmensajeupdate-no">No</span></td></tr><tr><td>Activar tags (etiquetas).</td><td><span class="ut-boton-sino" id="ut-utTagsOpcion-si">Si</span> <span class="ut-boton-sino" id="ut-utTagsOpcion-no">No</span></td></tr><tr><td>Tener siempre a la vista foros favoritos.</td><td><span class="ut-boton-sino" id="ut-utforosfavs-si">Si</span> <span class="ut-boton-sino" id="ut-utforosfavs-no">No</span></td></tr><tr><td>Activar filtro para hilos en favoritos.</td><td><span class="ut-boton-sino" id="ut-utfiltrarfavs-si">Si</span> <span class="ut-boton-sino" id="ut-utfiltrarfavs-no">No</span></td></tr><td>Links importantes al final de la página</td><td><span class="ut-boton-sino" id="ut-linksfooter-si">Si</span> <span class="ut-boton-sino" id="ut-linksfooter-no">No</span></td></tr><tr style="background: none;"><td><p id="ut-utlinksfooteroscuro" style="color: #999999;">Links importantes estilo oscuro usando theme predeterminado</p></td><td><span class="ut-boton-sino" id="ut-utlinksfooteroscuro-si">Si</span> <span class="ut-boton-sino" id="ut-utlinksfooteroscuro-no">No</span></td></tr><tr><td>Tabla de mods</td><td><span class="ut-boton-sino" id="ut-uttablamods-si">Si</span> <span class="ut-boton-sino" id="ut-uttablamods-no">No</span></td></tr><tr><td>Información del usuario al dejar el ratón sobre su nick</td><td><span class="ut-boton-sino" id="ut-utuserinfo-si">Si</span> <span class="ut-boton-sino" id="ut-utuserinfo-no">No</span></td></tr><tr><td>Opción para ordenar hilos por respuestas sin leer</td><td><span class="ut-boton-sino" id="ut-utordenarposts-si">Si</span> <span class="ut-boton-sino" id="ut-utordenarposts-no">No</span></td></tr><tr><td>Avisos en el favicon</td><td><span class="ut-boton-sino" id="ut-utfavicon-si">Si</span> <span class="ut-boton-sino" id="ut-utfavicon-no">No</span></td></tr><tr><td>Botón para ensanchar streams en hilos con Live! y postit (Experimental)</td><td><span class="ut-boton-sino" id="ut-utbigscreen-si">Si</span> <span class="ut-boton-sino" id="ut-utbigscreen-no">No</span></td></tr><tr><td>Recupera el texto escrito en el formulario extendido si se cierra la pestaña o navegador (Experimental)</td><td><span class="ut-boton-sino" id="ut-utsalvarposts-si">Si</span> <span class="ut-boton-sino" id="ut-utsalvarposts-no">No</span></td></tr></tbody></table>';
         var utmenutabla2 = '<table id="ut-menu-tabla2" class="ut-opciones" style="display: none;"><tbody><tr><td>Marcapáginas</td><td><span class="ut-boton-sino" id="ut-utmarcapaginas-si">Si</span> <span class="ut-boton-sino" id="ut-utmarcapaginas-no">No</span></td></tr><tr><td>Hilos con Live! activado destacados (solo para theme predeterminado)</td><td><span class="ut-boton-sino" id="ut-utlivesdestacados-si">Si</span> <span class="ut-boton-sino" id="ut-utlivesdestacados-no">No</span></td></tr><tr><td>Nuevo estilo para los spoilers</td><td><span class="ut-boton-sino" id="ut-utestilospoilers-si">Si</span> <span class="ut-boton-sino" id="ut-utestilospoilers-no">No</span></td></tr><tr><td>Quitar ventanas flotantes en Avisos, Favs y Msj dejandolo como antes</td><td><span class="ut-boton-sino" id="ut-utantiguoslinksuserinfo-si">Si</span> <span class="ut-boton-sino" id="ut-utantiguoslinksuserinfo-no">No</span></td></tr><tr><td>Cambiar algunos nombres de usuarios y foros</td><td><span class="ut-boton-sino" id="ut-utCambiosNombre-si">Si</span> <span class="ut-boton-sino" id="ut-utCambiosNombre-no">No</span></td></tr><tr><td>Añadir botón para cerrar spoilers al final del mismo</td><td><span class="ut-boton-sino" id="ut-utcerrarspoilers-si">Si</span> <span class="ut-boton-sino" id="ut-utcerrarspoilers-no">No</span></td></tr></tbody></table>';
-        var utmenutabla3 = '<table id="ut-menu-tabla3" style="display: none;"><tbody><tr><td><a href="http://mvusertools.com" target="_blank"><img src="http://www.mediavida.com/img/f/mediavida/2012/11/55268_mv_usertools_extension_para_firefox_chrome_opera_safari_0_full.png" width="48" height="48"><p>MV-Usertools</a> desarrollado por <a href="/id/Vegon">Vegon</a> y <a href="/id/cm07">cm07</a></p><br /><br /><p><a style="cursor: pointer;" id="ut-menu-notasdeparche">Notas del último parche.</a> Versión ' + UserTools.version + '.</p><br /><p>Atajos de teclado:<ul><li>- Ir a Favoritos: ctrl+alt+e</li><li>- Ir a Perfil: ctrl+alt+q</li><li>- Ir a Avisos: ctrl+alt+w</li><li>- Ir a Mensajes: ctrl+alt+r</li><li>- Ir a Foros: ctrl+alt+a</li><li>- Ir a Spy: ctrl+alt+d</li><li>- Abrir/Cerrar todos los spoilers: ctrl+alt+s</li><li>- Ir a la anterior página del hilo: ctrl+alt+z</li><li>- Ir a la siguiente página del hilo: ctrl+alt+x</li></ul></p><br /><br /><p>Para comunicar bugs usa el <a href="http://www.mediavida.com/foro/4/mv-usertools-extension-para-firefox-chrome-opera-safari-413818">hilo oficial</a>. Si tienes dudas de como funciona algun modulo u opción visita el <a href="http://mvusertools.com/caracteristicas">manual en la web oficial</a> que siempre está actualizado con las ultimas novedades.</p><br /><br /><p>Si las MV-Usertools te resultan utiles y quieres agradecernos las horas de trabajo detrás de ellas, tiranos algunas monedas.</p><br /><form action="https://www.paypal.com/cgi-bin/webscr" method="post"><input type="hidden" name="cmd" value="_s-xclick"><input type="hidden" name="hosted_button_id" value="2TD967SQAC6HC"><input type="image" src="https://www.paypalobjects.com/es_ES/ES/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal. La forma rápida y segura de pagar en Internet."><img alt="" border="0" src="https://www.paypalobjects.com/es_ES/i/scr/pixel.gif" width="1" height="1"></form></td></tr></tbody></table>';
+        var utmenutabla3 = '<table id="ut-menu-tabla3" style="display: none;"><tbody><tr><td><a href="http://mvusertools.com" target="_blank"><img src="http://www.mediavida.com/img/f/mediavida/2012/11/55268_mv_usertools_extension_para_firefox_chrome_opera_safari_0_full.png" width="48" height="48"><p>MV-Usertools</a> desarrollado por <a href="/id/Vegon">Vegon</a> y <a href="/id/cm07">cm07</a></p><br /><br /><p><a style="cursor: pointer;" id="ut-menu-notasdeparche">Notas del último parche.</a> Versión ' + UT.version + '.</p><br /><p>Atajos de teclado:<ul><li>- Ir a Favoritos: ctrl+alt+e</li><li>- Ir a Perfil: ctrl+alt+q</li><li>- Ir a Avisos: ctrl+alt+w</li><li>- Ir a Mensajes: ctrl+alt+r</li><li>- Ir a Foros: ctrl+alt+a</li><li>- Ir a Spy: ctrl+alt+d</li><li>- Abrir/Cerrar todos los spoilers: ctrl+alt+s</li><li>- Ir a la anterior página del hilo: ctrl+alt+z</li><li>- Ir a la siguiente página del hilo: ctrl+alt+x</li></ul></p><br /><br /><p>Para comunicar bugs usa el <a href="http://www.mediavida.com/foro/4/mv-usertools-extension-para-firefox-chrome-opera-safari-413818">hilo oficial</a>. Si tienes dudas de como funciona algun modulo u opción visita el <a href="http://mvusertools.com/caracteristicas">manual en la web oficial</a> que siempre está actualizado con las ultimas novedades.</p><br /><br /><p>Si las MV-Usertools te resultan utiles y quieres agradecernos las horas de trabajo detrás de ellas, tiranos algunas monedas.</p><br /><form action="https://www.paypal.com/cgi-bin/webscr" method="post"><input type="hidden" name="cmd" value="_s-xclick"><input type="hidden" name="hosted_button_id" value="2TD967SQAC6HC"><input type="image" src="https://www.paypalobjects.com/es_ES/ES/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal. La forma rápida y segura de pagar en Internet."><img alt="" border="0" src="https://www.paypalobjects.com/es_ES/i/scr/pixel.gif" width="1" height="1"></form></td></tr></tbody></table>';
         var utmenutabla4 = '<table id="ut-menu-tabla4" style="display: none;"><tbody><tr><td><form id="ut-macros-form"><input id="ut-title" placeholder="Título" maxlength="17"><br /><textarea id="ut-macro" placeholder="Macro"></textarea><br /><input type="submit" value="Guardar" style="margin-top: 3px;" ></form><ul id="ut-macros"></ul></td></tr></tbody></table>';
         $('<div style="display: none;" id="ut-dialog-menu"><div id="ut-window"><div id="ut-menu-contenido">' + utmenutabs + "" + utmenutabla1 + "" + utmenutabla2 + "" + utmenutabla4 + "" + utmenutabla3 + "</div>" + bottominfo + '<a style="float: right; margin-top: 10px; cursor: pointer;" id="ut-menu-cerrar">Cerrar</a></div></div>').insertBefore("#content_head");
         $("#ut-menu-tabla1 tr:odd, #ut-menu-tabla2 tr:odd, #ut-menu-tabla3 tr:odd").addClass("odd");
@@ -1276,18 +1304,16 @@ window.UserTools.options.setDefault("salvarposts", false);
             $("#nav_bar .bbii").css("left", "143px");
         }
         // Mensaje al updatear
-        var utpatchnotes = '<p style="font-size: 16px; font-weight: bold;">Actualización ' + UserTools.version + "</p><br /><br />- Cambio de arquitectura (bug alert).\n- Mejoras de rendimiento.<br /><br />";
+        var patch_notes = '<p style="font-size: 16px; font-weight: bold;">Actualización ' + UT.version + "</p> <br /><br /> -" + UT.patchNotes.join("<br />- ") + " <br /><br />";
         $('<div style="display: none" id="ut-mask"></div>').insertBefore("#background");
-        $('<div style="display: none" id="ut-dialog"><a href="http://mvusertools.com" target="_blank"><img style="margin: 0 150px;" src="http://www.mediavida.com/img/f/mediavida/2012/10/02632_mv_usertools_extension_para_firefox_chrome_safari_0_full.png"></a><div id="ut-window">' + utpatchnotes + "" + bottominfo + '<a style="float: right; margin-top: 10px; cursor: pointer;" id="ut-box-cerrar">Cerrar</a></div></div>').insertBefore("#content_head");
-        if (UserTools.options.get("mensajeupdate")) {
-            if (UserTools.options.get("versionls") !== UserTools.version) {
+        $('<div style="display: none" id="ut-dialog"><a href="http://mvusertools.com" target="_blank"><img style="margin: 0 150px;" src="http://www.mediavida.com/img/f/mediavida/2012/10/02632_mv_usertools_extension_para_firefox_chrome_safari_0_full.png"></a><div id="ut-window">' + patch_notes + "" + bottominfo + '<a style="float: right; margin-top: 10px; cursor: pointer;" id="ut-box-cerrar">Cerrar</a></div></div>').insertBefore("#content_head");
+        if (UT.options.get("mensajeupdate")) {
+            if (UT.options.get("versionls") !== UT.version) {
                 $("div#ut-mask").show();
                 $("div#ut-dialog").show();
-                UserTools.options.set("versionls", UserTools.version);
             }
-        } else {
-            UserTools.options.set("versionls", UserTools.version);
         }
+        UT.options.set("versionls", UT.version);
         $("#ut-menu-notasdeparche").click(function() {
             $("#ut-dialog-menu").hide();
             $("#ut-mask-menu").hide();
@@ -1303,10 +1329,10 @@ window.UserTools.options.setDefault("salvarposts", false);
             $("div#ut-dialog").hide();
         });
         // Version en el footer
-        if (typeof UserTools.version === undefined) {
+        if (typeof UT.version === undefined) {
             $("div#footer div.f_info p").append('• <a href="http://mvusertools.com" target="_blank">MV-Usertools</a>');
         } else {
-            $("div#footer div.f_info p").append('• <a href="http://mvusertools.com" target="_blank">MV-Usertools</a> ' + UserTools.version + "");
+            $("div#footer div.f_info p").append('• <a href="http://mvusertools.com" target="_blank">MV-Usertools</a> ' + UT.version + "");
         }
         // Estilos de opciones
         var ON_COLOR = "#EF5000";
@@ -1316,16 +1342,16 @@ window.UserTools.options.setDefault("salvarposts", false);
             var $si = $("#ut-ut" + opcion + "-si");
             var $no = $("#ut-ut" + opcion + "-no");
             $si.click(function() {
-                UserTools.options.set(opcion, true);
+                UT.options.set(opcion, true);
                 $si.css("color", ON_COLOR);
                 $no.css("color", OFF_COLOR);
             });
             $no.click(function() {
-                UserTools.options.set(opcion, false);
+                UT.options.set(opcion, false);
                 $si.css("color", OFF_COLOR);
                 $no.css("color", ON_COLOR);
             });
-            var enabled = UserTools.options.get(opcion);
+            var enabled = UT.options.get(opcion);
             $si.css("color", enabled ? ON_COLOR : OFF_COLOR);
             $no.css("color", enabled ? OFF_COLOR : ON_COLOR);
         };
@@ -1352,18 +1378,18 @@ window.UserTools.options.setDefault("salvarposts", false);
         optionMarkup("cerrarspoilers");
         // Boton de utlinksfooter. Tiene funciones extras, no es posible usar el constructor.
         $("#ut-linksfooter-si").click(function() {
-            UserTools.options.set("linksfooter", true);
+            UT.options.set("linksfooter", true);
             $("#ut-linksfooter-no").css("color", OFF_COLOR);
             $("#ut-linksfooter-si").css("color", ON_COLOR);
             $("#ut-utlinksfooteroscuro").css("color", OSCURO_COLOR);
         });
         $("#ut-linksfooter-no").click(function() {
-            UserTools.options.set("linksfooter", false);
+            UT.options.set("linksfooter", false);
             $("#ut-linksfooter-si").css("color", OFF_COLOR);
             $("#ut-linksfooter-no").css("color", ON_COLOR);
             $("#ut-utlinksfooteroscuro").css("color", OFF_COLOR);
         });
-        if (UserTools.options.get("linksfooter")) {
+        if (UT.options.get("linksfooter")) {
             $("#ut-linksfooter-no").css("color", OFF_COLOR);
             $("#ut-utlinksfooteroscuro").css("color", OSCURO_COLOR);
         } else {
@@ -1376,8 +1402,8 @@ window.UserTools.options.setDefault("salvarposts", false);
 /*
  * Sistema de macros.
  */
-(function($, UserTools) {
-    var macros = UserTools.options.get("macros", {});
+(function($, UT) {
+    var macros = UT.options.get("macros", {});
     // Functions
     // TODO: mejorable
     var updateMacros = function(store, $container) {
@@ -1385,7 +1411,7 @@ window.UserTools.options.setDefault("salvarposts", false);
         $container.children().each(function() {
             var $macro = $(this);
             var title = $macro.data("macro");
-            if (!(title in store)) {
+            if (typeof store[title] === "undefined") {
                 $macro.slideUp("slow", function() {
                     $macro.remove();
                 });
@@ -1395,12 +1421,12 @@ window.UserTools.options.setDefault("salvarposts", false);
         });
         var title;
         for (title in store) {
-            if (!(title in macros)) {
+            if (typeof macros[title] === "undefined") {
                 var $spantitle = $('<span class="ut-titletxt">').text(title);
-                var $spanmacro = $('<div class="ut-macrotxt"' + (UserTools.isDark ? " style='color: #EEEEEE !important;'" : "") + ">").text(store[title]);
+                var $spanmacro = $('<div class="ut-macrotxt"' + (UT.isDark ? ' style="color: #EEEEEE;"' : "") + ">").text(store[title]);
                 var $title = $("<a>").html(' <a style="cursor:pointer;" title="Borrar macro" class="ut-remove-macro"><i class="sprite UT-trash-orange"></i></a>').prepend($spantitle).append($spanmacro);
                 // solo +title+ para la lista de titulos
-                $('<li class="ut-titleymacro">').data("macro", title).append($title).hide().appendTo($item).slideDown("slow");
+                $('<li class="ut-titleymacro">').data("macro", title).append($title).hide().appendTo($container).slideDown("slow");
             }
         }
     };
@@ -1441,7 +1467,7 @@ window.UserTools.options.setDefault("salvarposts", false);
             var text = $macro_text.val();
             if (title !== "" && text !== "") {
                 macros[title] = text;
-                UserTools.options.set("macros", macros);
+                UT.options.set("macros", macros);
                 $title.val("");
                 $macro_text.val("");
                 updateMacros(macros, $macros);
@@ -1451,18 +1477,18 @@ window.UserTools.options.setDefault("salvarposts", false);
         });
         $macros.on("click", "a.ut-remove-macro", function() {
             delete macros[$(this).parent().parent().data("macro")];
-            UserTools.options.set("macros", macros);
+            UT.options.set("macros", macros);
             updateMacros(macros, $macros);
             updateMacros(macros, $macrosbutton);
             return false;
         });
-        $cuerpo = $("textarea#cuerpo");
+        var $cuerpo = $("textarea#cuerpo");
         $macrosbutton.on("click", "li", function() {
             $cuerpo.insertAtCaretPos(macros[$(this).data("macro")]);
             $macroslist.hide();
             return false;
         });
-        if ($("#goext").length > 0 || UserTools.live) {
+        if ($("#goext").length > 0 || UT.live) {
             $macroslist.addClass("ut-button-macros-list-barrendera");
         }
     });

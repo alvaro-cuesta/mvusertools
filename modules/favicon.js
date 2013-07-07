@@ -2,18 +2,18 @@
  *  Muestra los avisos (favs, avisos, mensajes) en el favicon de la web.
  */
 
-(function ($, UserTools, Tinycon) {
+(function ($, UT, Tinycon) {
 
-    UserTools.options.setDefault('favicon', true);
+    UT.options.setDefault('favicon', true);
 
-    UserTools.options.$('favicon', function () {
+    UT.options.$('favicon', function () {
 	var favs = $('#userinfo a[href^="/foro/favoritos"] strong.bubble').html();
 	var avisos = $('#userinfo a[href^="/notificaciones"] strong.bubble').html();
 	var mensajes = $('#userinfo a[href^="/mensajes"] strong.bubble').html();
 
 	var total = 0;
 
-        if (typeof notificaciones !== 'undefined') {
+        if (typeof favs !== 'undefined') {
 	    total += parseInt(favs, 10);
         }
         if (typeof avisos !== 'undefined') {

@@ -1,13 +1,13 @@
-(function ($, UserTools) {
+(function ($, UT) {
 
-    UserTools.options.setDefault('bigscreen', true);
+    UT.options.setDefault('bigscreen', true);
 
     // Modo bigscreen en live con stream
-    if (UserTools.options.get('bigscreen')) {
+    if (UT.options.get('bigscreen')) {
 
 	$(function () {
 
-            if (UserTools.postitlive) {
+            if (UT.postitlive) {
 		$('<div id="bigscreen-mode" class="sprite"></div>').insertAfter('a#showform');
 		$('<div style="display: none;" id="bigscreen-mode-off" class="sprite"></div>').insertAfter('a#showform');
 

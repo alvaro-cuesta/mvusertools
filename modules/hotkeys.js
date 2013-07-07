@@ -2,14 +2,13 @@
  * Atajos de teclado.
  */
 
-(function ($, document, Mousetrap, UserTools) {
+(function ($, document, Mousetrap, UT) {
 
     // Constants
     var BASE_URL = 'http://www.mediavida.com';
 
     var REDIRECCIONES = {
 	'ctrl+alt+e': '/foro/favoritos',
-	'ctrl+alt+q': '/id/' + UserTools.user,
 	'ctrl+alt+w': '/notificaciones',
 	'ctrl+alt+r': '/mensajes',
 	'ctrl+alt+a': '/foro',
@@ -17,13 +16,20 @@
     }
 
     // Redirecciones genéricas
+    var hotkey;
     for (hotkey in REDIRECCIONES) {
-	if (REDIRECCIONES.hasOwnProperty(hotkey)) {
-	    Mousetrap.bind(hotkey, function () {
-		document.location = BASE_URL + REDIRECCIONES[hotkey];
-	    });
-	}
+        (function (hotkey) {
+            Mousetrap.bind(hotkey, function () {
+                document.location = BASE_URL + REDIRECCIONES[hotkey];
+            });
+        })(hotkey);
     }
+
+    $(function () {
+        Mousetrap.bind('ctrl+alt+q', function () {
+            document.location = BASE_URL + '/id/' + UT.user;
+        });
+    });
 
     // Previous/next page
     var previousPageLink = jQuery($(".tnext")).attr('href');
@@ -42,7 +48,7 @@
 
     // Open/close Spoilers
     Mousetrap.bind('ctrl+alt+s', function () {
-	var $spoilers= $('div[id^="cuerpo_"] div[id^="sp_"]');
+        var $spoilers= $('div[id^="cuerpo_"] div[id^="sp_"]');
 
         if ($spoilers.is(':visible')) {  // At least one is visible
             $('div[id^="cuerpo_"] a.spoiler.less').removeClass('less');

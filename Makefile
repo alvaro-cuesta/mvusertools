@@ -1,12 +1,3 @@
-# TODO:
-# - Bundling
-# - SHIT OPERA Y SAFARI ES ESPECIAL
-
-# Por probar
-# bigscreen.js
-# MAL: BLACKLIST
-
-
 # Module definitions
 MODULE_FILES = main.js css.js hotkeys.js footer.js mods.js marcapaginas.js favicon.js botoneras.js userinfo.js nombres.js favoritos.js spy.js spoiler.js foros_fav.js antiguo.js foros.js tags.js blacklist.js usertools.js macros.js
 MODULE_DIR = ./modules/
@@ -29,7 +20,7 @@ CHROME_OUT = Chrome/
 
 # Rules
 .PHONY=all dev out firefox chrome opera safari
-
+	
 all: firefox chrome opera safari
 
 dev: $(MODULES)
@@ -39,8 +30,8 @@ dev: $(MODULES)
 	cd $(DEV_DIR)/Firefox/; zip -9 -r mv-usertools.xpi .
 	mv $(DEV_DIR)/Firefox/mv-usertools.xpi $(DEV_DIR)
 	cp $(DEV_DIR)/$(FILE_OUT) $(DEV_DIR)/$(CHROME_OUT)
-#	cp $(DEV_DIR)/$(FILE_OUT) $(DEV_DIR)/$(OPERA_OUT)
-#	cp $(DEV_DIR)/$(FILE_OUT) $(DEV_DIR)/$(SAFARI_OUT)
+#       cp $(DEV_DIR)/$(FILE_OUT) $(DEV_DIR)/$(OPERA_OUT)
+#       cp $(DEV_DIR)/$(FILE_OUT) $(DEV_DIR)/$(SAFARI_OUT)
 
 $(BUILD_DIR)/$(FILE_OUT): $(MODULES)
 	uglifyjs $(MODULES) $(OPTIONS)
@@ -57,10 +48,10 @@ chrome: $(BUILD_DIR)/$(FILE_OUT)
 
 opera: $(BUILD_DIR)/$(FILE_OUT)
 	$(error Opera bundling not implemented!)
-#	cp $(BUILD_DIR)/$(FILE_OUT) $(BUILD_DIR)/$(OPERA_OUT)
-#	echo "TODO: Hacer bundle"
+#       cp $(BUILD_DIR)/$(FILE_OUT) $(BUILD_DIR)/$(OPERA_OUT)
+#       echo "TODO: Hacer bundle"
 
 safari: $(BUILD_DIR)/$(FILE_OUT)
 	$(error Safari bundling not implemented!)
-#	cp $(BUILD_DIR)/$(FILE_OUT) $(BUILD_DIR)/$(SAFARI_OUT)
-#	echo "TODO: Hacer bundle"
+#       cp $(BUILD_DIR)/$(FILE_OUT) $(BUILD_DIR)/$(SAFARI_OUT)
+#       echo "TODO: Hacer bundle"

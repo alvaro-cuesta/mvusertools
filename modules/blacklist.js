@@ -1,19 +1,19 @@
-(function ($, UserTools) {
+(function ($, UT) {
 
     $(function() {
 
 	var TOGGLE = "<div id='toggle' class='sprite'><div> ";
-	var INFO = "<span class='blacklisted-post'" + (UserTools.isDark ? " style='color: #626262 !important;'" : "") + ">Click en <img src='http://www.mvusertools.com/ext/img/blacklist-mini.png'> para desbloquear.</span>";
+	var INFO = "<span class='blacklisted-post'" + (UT.isDark ? " style='color: #626262 !important;'" : "") + ">Click en <img src='http://www.mvusertools.com/ext/img/blacklist-mini.png'> para desbloquear.</span>";
 	var BARRA = "<div class='nopost barra'> \
 Usuario <span class='mensaje-ocultado'>Blacklisted</span> \
 </div> ";
 
-	var blacklisted = UserTools.options.get('blacklisted', {});
+	var blacklisted = UT.options.get('blacklisted', {});
 
 	//Set Toggle Class
 	$("#scrollpages").append(TOGGLE);
 
-	if (UserTools.options.get('blacklist')) {
+	if (UT.options.get('blacklist')) {
 	    $('#toggle').addClass("toggle-on");
 	    $('#toggle').removeClass("toggle-off");
 	} else {
@@ -69,7 +69,7 @@ Usuario <span class='mensaje-ocultado'>Blacklisted</span> \
 
 	    // BARRA
 	    $(this).parent().before(BARRA);
-	    if (UserTools.options.get('blacklist')) {
+	    if (UT.options.get('blacklist')) {
 		if (blacklisted[nick]) {
 		    $(this).parent().hide();
 		} else {
@@ -86,21 +86,21 @@ Usuario <span class='mensaje-ocultado'>Blacklisted</span> \
 
 	    //	$('#toggle').toggleClass("toggle-on toggle-off");
 
-	    if (UserTools.options.get('blacklist')) {
+	    if (UT.options.get('blacklist')) {
 		$('#toggle').addClass("toggle-off");
 		$('#toggle').removeClass("toggle-on");
-		UserTools.options.set('blacklist', false);
+		UT.options.set('blacklist', false);
 	    } else {
 		$('#toggle').addClass("toggle-on");
 		$('#toggle').removeClass("toggle-off");
-		UserTools.options.set('blacklist', true);
+		UT.options.set('blacklist', true);
 	    }
 
 	    //Tenemos un nuevo estado. Si ahora es on, tenemos que ocultar, si es off tenemos que mostrar
 	    $('.autor').each(function () {
 		var nick = $(this).data('name');
 
-		if (UserTools.options.get('blacklist')) {
+		if (UT.options.get('blacklist')) {
 		    if (blacklisted[nick]) {
 			$(this).parent().prev().show();
 			$(this).parent().hide();
@@ -130,7 +130,7 @@ Usuario <span class='mensaje-ocultado'>Blacklisted</span> \
 
 	    console.log(blacklisted);
 
-	    UserTools.options.set('blacklisted', blacklisted);
+	    UT.options.set('blacklisted', blacklisted);
 
 	    // En caso de blacklist ON Tapar los posts del autor si ahora esta blacklisted, o mostrarlos en caso contrario.
 	    // Si esta off, añadir pijadas o quitarlas.
@@ -150,7 +150,7 @@ Usuario <span class='mensaje-ocultado'>Blacklisted</span> \
 		    $(this).parent().find(".tapavatares").hide();
 		}
 
-		if (UserTools.options.get('blacklist')) {
+		if (UT.options.get('blacklist')) {
 		    if (blacklisted[nick]) {
 			$(this).parent().prev().show();
 			$(this).parent().slideUp();

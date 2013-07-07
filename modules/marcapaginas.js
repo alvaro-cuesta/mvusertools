@@ -2,13 +2,14 @@
  * Marcápaginas en los posts a los que entras directamente (URLs acabas en #xx...)
  */
 
-(function ($, UserTools) {
-    UserTools.options.setDefault('marcapaginas', true);
+(function ($, UT) {
+    UT.options.setDefault('marcapaginas', true);
 
-    UserTools.options.$('marcapaginas', function () {
-	$('div.mark').attr(
-	    'style',
-	    'background-image: url("http://www.mvusertools.com/ext/img/marcapaginas2.png") !important; background-repeat: no-repeat !important; background-position: 100px top !important;'
-	);
+    UT.options.$('marcapaginas', function () {
+	$('div.mark').css({
+	    'background-image': 'url("http://www.mvusertools.com/ext/img/marcapaginas2.png")',
+	    'background-repeat': 'no-repeat',
+	    'background-position': '100px top'
+	});
     });
 })(jQuery, window.UserTools);

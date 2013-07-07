@@ -2,9 +2,9 @@
  * Lista de mods en sidebar.
  */
 
-(function ($, UserTools) {
+(function ($, UT) {
 
-    UserTools.options.setDefault('tablamods', true);
+    UT.options.setDefault('tablamods', true);
 
     var mods = {
 	1: ['bazoo', 'jadgix', 'J40', 'RaymaN', 'TazzMaTazz'],
@@ -63,11 +63,13 @@
     };
 
     // Mods de cada foro
-    UserTools.options.$('tablamods', function () {
+    UT.options.$('tablamods', function () {
 	if ($('div#topnav a[href="/foro/"]').length > 0 && $('div.live_info').length === 0) {
-	    var $modlist = $('<div class="box"><div id="modlist"><h3>Moderadores</h3></div></div>')
-		.addClass(!UserTools.isDark ? 'modlistblanco' : 'modlistnegro')
-		.appendTo('div.smallcol, div.tinycol');
+	    var $box = $('<div class="box">').appendTo('div.smallcol, div.tinycol');
+
+	    var $modlist = $('<div id="modlist"><h3>Moderadores</h3></div>')
+		.addClass(!UT.isDark ? 'modlistblanco' : 'modlistnegro')
+		.appendTo($box);
 
             var id = $('input#fid').attr('value');
 

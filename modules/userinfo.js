@@ -2,39 +2,31 @@
  * Infomración del perfil en la lista de users.
  */
 
-(function ($, UserTools) {
+(function ($, UT) {
     var TIMEOUT = 1000;
+    var FADE = 400;
 
-    UserTools.options.setDefault('userinfo', true);
+    UT.options.setDefault('userinfo', true);
 
-    UserTools.options.$('userinfo', function () {
+    UT.options.$('userinfo', function () {
+	var $usercard = $('<div id="ajax_usercard">').css({
+	    'backgroundColor': (UT.isDark ? '#39444B' : 'whitesmoke'),
+	    'borderRadius': '6px',
+            'padding': '10px 5px 5px 5px',
+            'position': 'absolute',
+            'overflow': 'hidden',
+            'boxShadow': '1px 1px 5px rgba(0, 0, 0, 0.25)',
+            'zIndex': '9999'
+	}).appendTo($('body'));
+	var request = null;
+	var timeout = null;
+
 	var info_box = function(id, left, top) {
-	    var aborted = false;
-	    var request;
-
-	    var timeout = setTimeout(function () {
-		request = $.get('http://www.mediavida.com/id/' + id, function (data) {
-		    $('#ajax_usercard').remove();
-		    var $usercard = $('<div id="ajax_usercard">' +
-				      $('.infoavatar', data).html() +
-				      '</div>');
-		    $('body').append($usercard);
-
-		    $usercard.css({
-			'background-color': (UserTools.isDark ? 'whitesmoke' : '#39444B'),
-			'borderRadius': '6px',
-                        'padding': '10px 5px 5px 5px',
-                        'position': 'absolute',
-                        'left': x,
-                        'top': y,
-                        'overflow': 'hidden',
-                        '$usercardShadow': '1px 1px 5px rgba(0, 0, 0, 0.25)',
-                        'zIndex': '9999'
-		    });
-		    $('.useravatar', $usercard).css({
-			'float': 'left',
-			'padding': '5px',
-			'marginRight': '5px'
+	    timeout = setTimeout(function () {
+		request = $.get('http://www.mediavida.com/id/' + id, function ($data) {
+		    $usercard.html($('.infoavatar', $data).html()).css({
+			'left': left,
+			'top': top
 		    });
 		    $('.userinfo', $usercard).css({
                         'borderRadius': '6px',
@@ -42,36 +34,41 @@
                         'height': '90px',
                         'backgroundColor': '#F4F6F1',
                         'float': 'left',
-                        'padding': '5px',
+                        'padding': '7px 5px 0 5px',
                         'position': 'relative',
                         'zoom': '1'
 		    });
+		    $('.useravatar', $usercard).css({
+			'float': 'left',
+			'padding': '5px',
+			'marginRight': '5px'
+		    }).find('img').load(function() {
+			$usercard.fadeIn(FADE);
+		    });
 		});
 	    }, TIMEOUT);
-
-	    return function () {
-		if (!aborted) {
-		    clearTimeout(timeout);
-		    if (typeof request !== 'undefined') {
-			request.abort();
-		    }
-		    $('#ajax_usercard').remove();
-		    aborted = true;
-		}
-	    };
 	};
 
-	var abort;
 	$('.post .autor dt a').hover(function () {
 	    var $this = $(this);
 	    var offset = $this.offset();
 
-            abort = info_box(
+            info_box(
 		$this.attr('href').match(/id\/(.+)/)[1],
 		offset.left - 10,
-		offset.top + 14
+		offset.top + 15
 	    );
-	}, abort);
+	}, function () {
+	    if (timeout !== null) {
+		clearTimeout(timeout);
+		timeout = null;
+	    }
+	    if (request !== null) {
+		request.abort();
+		request = null;
+	    }
+	    $usercard.fadeOut(FADE);
+	});
 
     });
 })(jQuery, window.UserTools);

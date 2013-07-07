@@ -1,10 +1,10 @@
-(function ($, UserTools) {
+(function ($, UT) {
 
-    UserTools.options.setDefault('filtrarfavs', true);
-    UserTools.options.setDefault('ordenarposts', true);
+    UT.options.setDefault('filtrarfavs', true);
+    UT.options.setDefault('ordenarposts', true);
 
     // Filtrar favoritos
-    if (UserTools.options.get('filtrarfavs')) {
+    if (UT.options.get('filtrarfavs')) {
 	$(function () {
 
             $('#favoritos .tinycol').prepend('<div id="ut-filtros-fav">');
@@ -87,7 +87,7 @@
     }
 
     // Ordenar por respuestas sin leer en favoritos (bug con hilos con 1k)
-    if (UserTools.options.get('ordenarposts')) {
+    if (UT.options.get('ordenarposts')) {
 	$(function () {
 
             var $table = $('div#main table.full');
@@ -122,4 +122,4 @@
 	});
     }
 
-})(jQuery, UserTools);
+})(jQuery, window.UserTools);
